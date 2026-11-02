@@ -241,6 +241,33 @@ def validacao_cruzada(
     return linhas
 
 
+def importancia_por_permutacao(
+    tarefas: Sequence[Tarefa],
+    configuracao: ConfiguracaoDoModelo,
+    dobras: int = 5,
+    semente_aleatoria: int = 42,
+) -> list[dict[str, float]]:
+    """Importância de cada característica em cada dobra, medida nas tarefas de teste.
+
+    Usa as mesmas dobras e a mesma regra de treino da validação cruzada.
+    """
+    grupos = [t.grupo for t in tarefas]
+    if len(set(grupos)) < 2:
+        raise ValueError("a validação cruzada por CWE precisa de pelo menos duas CWEs")
+    quantidade = min(dobras, len(set(grupos)))
+    resultado = []
+    for grupos_de_teste in _dobras(grupos, quantidade, random.Random(semente_aleatoria)):
+        teste = [t for t in tarefas if t.grupo in grupos_de_teste]
+        treino = [t for t in tarefas if t.grupo not in grupos_de_teste]
+        modelo = ModeloAprendido(configuracao.nome, configuracao.colunas, semente_aleatoria)
+        modelo.treinar(_exemplos_de_treino(treino, grupos_de_teste))
+        pares = [
+            (t.semente, t.candidatos, [r is Rotulo.VARIANTE for r in t.rotulos]) for t in teste
+        ]
+        resultado.append(modelo.importancia(pares))
+    return resultado
+
+
 def intervalo_bootstrap(
     valores: Sequence[float], repeticoes: int = 2000, semente_aleatoria: int = 42
 ) -> tuple[float, float]:

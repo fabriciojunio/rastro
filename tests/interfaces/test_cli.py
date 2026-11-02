@@ -217,6 +217,9 @@ def test_experimento_grava_o_relatorio(
         "modelo_completo",
     }
     assert "modelo_completo x jaccard" in relatorio["comparacoes"]
+    assert set(relatorio["importancia_modelo_completo"]) == set(
+        relatorio["configuracao"]["caracteristicas"]
+    )
     assert len(relatorio["por_tarefa"]) == 5 * 4
     assert "4 tarefas em 2 CWEs" in capsys.readouterr().out
 

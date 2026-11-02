@@ -13,6 +13,7 @@ from rastro.avaliacao.experimento import (
     _exemplos_de_treino,
     comparar,
     escolher_correcao,
+    importancia_por_permutacao,
     intervalo_bootstrap,
     montar_tarefas,
     ranquear,
@@ -192,6 +193,20 @@ def test_validacao_cruzada_e_reprodutivel(tarefas: list[Tarefa]) -> None:
 def test_validacao_cruzada_precisa_de_duas_cwes(tarefas: list[Tarefa]) -> None:
     with pytest.raises(ValueError, match="duas CWEs"):
         validacao_cruzada([t for t in tarefas if t.grupo == "CWE1"], [Jaccard()], [])
+
+
+def test_importancia_por_permutacao_uma_por_dobra(tarefas: list[Tarefa]) -> None:
+    importancias = importancia_por_permutacao(tarefas, ConfiguracaoDoModelo("completo", NOMES), 3)
+    assert len(importancias) == 3
+    for por_dobra in importancias:
+        assert set(por_dobra) == set(NOMES)
+
+
+def test_importancia_precisa_de_duas_cwes(tarefas: list[Tarefa]) -> None:
+    with pytest.raises(ValueError, match="duas CWEs"):
+        importancia_por_permutacao(
+            [t for t in tarefas if t.grupo == "CWE1"], ConfiguracaoDoModelo("c", NOMES)
+        )
 
 
 def test_intervalo_bootstrap() -> None:

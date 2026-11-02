@@ -10,6 +10,7 @@ parecidas com a falha e menos parecidas com a correção.
 import argparse
 import io
 import json
+import statistics
 import sys
 import time
 from collections.abc import Sequence
@@ -32,6 +33,7 @@ from rastro.avaliacao.experimento import (
     ConfiguracaoDoModelo,
     Escopo,
     comparar,
+    importancia_por_permutacao,
     montar_tarefas,
     resumir,
     validacao_cruzada,
@@ -194,6 +196,16 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
         for outro in sorted(resumo)
         if outro != "modelo_completo"
     }
+    importancias = importancia_por_permutacao(
+        tarefas, modelos[-1], argumentos.dobras, argumentos.semente
+    )
+    importancia = {
+        nome: {
+            "media": statistics.fmean(d[nome] for d in importancias),
+            "desvio": statistics.pstdev(d[nome] for d in importancias),
+        }
+        for nome in sorted(NOMES, key=lambda n: -statistics.fmean(d[n] for d in importancias))
+    }
     relatorio: dict[str, Any] = {
         "configuracao": {
             "juliet_sha256": argumentos.sha256,
@@ -214,6 +226,7 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
         },
         "resumo": resumo,
         "comparacoes": comparacoes,
+        "importancia_modelo_completo": importancia,
         "por_tarefa": linhas,
     }
     saida = Path(argumentos.saida)
