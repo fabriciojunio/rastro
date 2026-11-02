@@ -5,7 +5,9 @@ o candidato parece com a falha? parece com a correção? tem o que a correção
 tirou? já tem o que ela pôs? chama as mesmas funções perigosas?
 """
 
+import hashlib
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from rastro.aplicacao.portas import AnalisadorDeTrecho
@@ -38,6 +40,7 @@ class SementeAnalisada:
     chamadas_removidas: frozenset[str]
     chamadas_adicionadas: frozenset[str]
     tamanho: int
+    impressao: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +49,12 @@ class CandidatoAnalisado:
     ngramas: frozenset[Ngrama]
     chamadas: frozenset[str]
     tamanho: int
+    impressao: str
+
+
+def impressao(tokens: Sequence[str]) -> str:
+    """Resumo do código abstraído: igual só quando os tokens são iguais (clone tipo 2)."""
+    return hashlib.blake2b(" ".join(tokens).encode("utf-8"), digest_size=16).hexdigest()
 
 
 def analisar_semente(
@@ -64,6 +73,7 @@ def analisar_semente(
         chamadas_removidas=chamadas_v - chamadas_c,
         chamadas_adicionadas=chamadas_c - chamadas_v,
         tamanho=len(tokens_v),
+        impressao=impressao(tokens_v),
     )
 
 
@@ -76,6 +86,7 @@ def analisar_candidato(
         ngramas=ngramas(tokens, n),
         chamadas=analisador.chamadas(funcao.codigo, funcao.linguagem),
         tamanho=len(tokens),
+        impressao=impressao(tokens),
     )
 
 

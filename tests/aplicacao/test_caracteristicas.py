@@ -85,3 +85,11 @@ def test_variante_fica_mais_perto_da_falha_que_da_correcao(analisador: Analisado
     c = _caracteristicas(analisador, VARIANTE)
     assert c["falha_presente"] > c["correcao_presente"]
     assert math.isfinite(c["log_razao_tamanho"])
+
+
+def test_impressao_igual_para_clone_com_nomes_trocados(analisador: AnalisadorDeCodigo) -> None:
+    a = analisar_candidato(_funcao("void f(String a) { s.execute(a); }"), analisador)
+    b = analisar_candidato(_funcao("void g(String bb) { t.execute(bb); }"), analisador)
+    c = analisar_candidato(_funcao("void g(String bb) { t.executeQuery(bb); }"), analisador)
+    assert a.impressao == b.impressao
+    assert a.impressao != c.impressao
