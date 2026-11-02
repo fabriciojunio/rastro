@@ -21,7 +21,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+figuras = [
+    "matplotlib>=3.10,<4",
+]
 dev = [
+    "matplotlib>=3.10,<4",
     "mypy>=2.4,<3",
     "pytest>=9.2,<10",
     "pytest-cov>=7.1,<8",
