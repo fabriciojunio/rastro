@@ -9,10 +9,12 @@ CodeQL ("using a known security vulnerability as a seed to find similar problems
 incidentes de produto (PSIRT).
 
 O caso que motivou o trabalho é o PHP. A CVE-2012-1823 permitia passar opções ao `php-cgi` pela
-query string. A correção bloqueou o hífen. Em 2024, a CVE-2024-4577 mostrou que, em Windows com
-certas páginas de código, a conversão "Best-Fit" transforma o hífen suave (0xAD) em hífen comum,
-e a mesma injeção de argumento volta, contornando a correção de 2012 ([resumo do caso][php]). A
-correção fechou o ponto, mas não a classe de falha.
+query string. A correção fez o programa deixar de interpretar opções quando a query string
+decodificada começa com hífen e não tem `=`. Em 2024, a CVE-2024-4577 mostrou que, em Windows com
+certas páginas de código, o hífen suave (0xAD) passa pela checagem, que olha a query string, e
+vira hífen comum na conversão "Best-Fit" dos argumentos, como diz a mensagem do commit da correção
+([`93826731`](https://github.com/php/php-src/commit/938267314835de3c2ed1a3da4f2959f1d2709468);
+[resumo do caso][php]). A correção fechou o ponto, mas não a classe de falha.
 
 ## 2. Perguntas de pesquisa
 
