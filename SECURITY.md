@@ -2,7 +2,8 @@
 
 ## Como avisar de uma falha
 
-Escreva para **fabricioad444@gmail.com** com o que encontrou e como reproduzir. É um projeto
+Use o aviso privado do GitHub (aba **Security**, **Report a vulnerability**) ou escreva para
+**fabricioad444@gmail.com** com o que encontrou e como reproduzir. É um projeto
 acadêmico mantido por uma pessoa: a resposta depende de disponibilidade.
 
 ## O que interessa
