@@ -17,13 +17,20 @@ permissions:
 
 jobs:
   experimento:
-    name: Juliet Java 1.3 (escopo ${{ matrix.escopo }})
+    name: Juliet Java 1.3 (escopo ${{ matrix.escopo }}, n=${{ matrix.ngrama }})
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         escopo: [familia, cwe]
+        ngrama: [3]
+        # Sensibilidade: o resultado principal não pode depender do tamanho do n-grama.
+        include:
+          - escopo: cwe
+            ngrama: 2
+          - escopo: cwe
+            ngrama: 4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
