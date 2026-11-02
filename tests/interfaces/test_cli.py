@@ -3,7 +3,6 @@ import io
 import json
 import runpy
 import sys
-import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -164,53 +163,16 @@ def test_download_sem_https_e_recusado(tmp_path: Path) -> None:
         baixar("http://exemplo.org/j.zip", tmp_path / "j.zip", "0" * 64)
 
 
-# Zip no formato da Juliet, só para teste: duas CWEs, duas famílias, quatro fluxos.
-MODELO_DE_CASO = """
-public class {classe} extends AbstractTestCase {{
-    public void bad() throws Throwable {{
-        {abre} String data = fonte{familia}(); r.{perigoso}("a" + data); }}
-    }}
-    private void goodG2B() throws Throwable {{
-        {abre} String data = "fixo"; r.{perigoso}("a" + data); }}
-    }}
-    private void goodB2G() throws Throwable {{
-        {abre} String data = fonte{familia}(); r.{seguro}(data); r.limpar(data); }}
-    }}
-}}
-"""
-ABERTURAS = ("if (IO.t) {", "while (k > 0) {", "if (IO.f()) {", "for (int i = 0; i < 1; i++) {")
-SINKS = {"CWE89_SQL": ("execute", "prepareStatement"), "CWE78_OS": ("exec", "escapar")}
-
-
-def _juliet(tmp_path: Path) -> tuple[Path, str]:
-    caminho = tmp_path / "juliet.zip"
-    with zipfile.ZipFile(caminho, "w") as pacote:
-        for prefixo, (perigoso, seguro) in SINKS.items():
-            for familia in (1, 2):
-                for fluxo in (1, 2, 3, 4):
-                    classe = f"{prefixo}__f{familia}_{fluxo:02d}"
-                    nome = f"Java/src/testcases/{prefixo}/s01/{classe}.java"
-                    pacote.writestr(
-                        nome,
-                        MODELO_DE_CASO.format(
-                            classe=classe,
-                            abre=ABERTURAS[fluxo - 1],
-                            familia=familia,
-                            perigoso=perigoso,
-                            seguro=seguro,
-                        ),
-                    )
-    return caminho, hashlib.sha256(caminho.read_bytes()).hexdigest()
-
-
-def test_experimento_grava_o_relatorio(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    juliet, sha256 = _juliet(tmp_path)
+def test_experimento_grava_o_relatorio(
+    tmp_path: Path, juliet: tuple[Path, str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    zip_juliet, sha256 = juliet
     saida = tmp_path / "res" / "experimento.json"
     codigo = principal(
         [
             "experimento",
             "--juliet",
-            str(juliet),
+            str(zip_juliet),
             "--sha256",
             sha256,
             "--outros",
@@ -237,14 +199,14 @@ def test_experimento_grava_o_relatorio(tmp_path: Path, capsys: pytest.CaptureFix
     assert "4 tarefas em 2 CWEs" in capsys.readouterr().out
 
 
-def test_experimento_no_escopo_cwe(tmp_path: Path) -> None:
-    juliet, sha256 = _juliet(tmp_path)
+def test_experimento_no_escopo_cwe(tmp_path: Path, juliet: tuple[Path, str]) -> None:
+    zip_juliet, sha256 = juliet
     saida = tmp_path / "cwe.json"
     codigo = principal(
         [
             "experimento",
             "--juliet",
-            str(juliet),
+            str(zip_juliet),
             "--sha256",
             sha256,
             "--escopo",
@@ -269,9 +231,11 @@ def test_experimento_sem_juliet_e_sem_baixar_e_recusado(tmp_path: Path) -> None:
     assert principal(["experimento", "--juliet", str(tmp_path / "nao.zip")]) == 2
 
 
-def test_experimento_baixa_quando_pedido(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    juliet, sha256 = _juliet(tmp_path)
-    dados = juliet.read_bytes()
+def test_experimento_baixa_quando_pedido(
+    tmp_path: Path, juliet: tuple[Path, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    zip_juliet, sha256 = juliet
+    dados = zip_juliet.read_bytes()
     monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _Resposta(dados))
     destino = tmp_path / "dados" / "j.zip"
     codigo = principal(
@@ -295,10 +259,12 @@ def test_experimento_baixa_quando_pedido(tmp_path: Path, monkeypatch: pytest.Mon
 
 
 def test_variantes_com_modelo_treinado_na_juliet(
-    tmp_path: Path, semente: tuple[Path, Path, Path], capsys: pytest.CaptureFixture[str]
+    juliet: tuple[Path, str],
+    semente: tuple[Path, Path, Path],
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    juliet, sha256 = _juliet(tmp_path)
-    args = _args(semente, "--json", "--treinar-com", str(juliet), "--sha256", sha256)
+    zip_juliet, sha256 = juliet
+    args = _args(semente, "--json", "--treinar-com", str(zip_juliet), "--sha256", sha256)
     assert principal(args) == 0
     assert json.loads(capsys.readouterr().out)["pontuador"] == "modelo_completo"
 
