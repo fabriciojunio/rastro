@@ -134,10 +134,18 @@ class _Resposta(io.BytesIO):
 
 
 def test_download_so_fica_com_hash_certo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _Resposta(b"dados"))
+    pedidos: list[Any] = []
+
+    def abrir(pedido: Any, **_: Any) -> _Resposta:
+        pedidos.append(pedido)
+        return _Resposta(b"dados")
+
+    monkeypatch.setattr("urllib.request.urlopen", abrir)
     destino = tmp_path / "sub" / "j.zip"
     baixar("https://exemplo.org/j.zip", destino, hashlib.sha256(b"dados").hexdigest())
     assert destino.read_bytes() == b"dados"
+    # O SARD recusa o agente padrão do Python com 403.
+    assert pedidos[0].get_header("User-agent") == cli.AGENTE
 
     outro = tmp_path / "x.zip"
     with pytest.raises(ErroDeUso):

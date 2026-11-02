@@ -48,6 +48,9 @@ EXTENSOES = {
 # Arquivo maior que isso é gerado ou minificado, e só atrasaria a análise.
 TAMANHO_MAXIMO_DE_ARQUIVO = 2 * 1024 * 1024
 _BLOCO = 1024 * 1024
+# O NIST SARD responde 403 ao agente padrão do Python. Um agente que diz quem
+# está baixando é aceito, e é o educado de qualquer forma.
+AGENTE = "rastro/0.1 (+https://github.com/fabriciojunio/rastro)"
 
 
 class ErroDeUso(Exception):
@@ -71,7 +74,8 @@ def baixar(url: str, destino: Path, sha256: str) -> None:
         raise ErroDeUso("o download só é feito por HTTPS")
     destino.parent.mkdir(parents=True, exist_ok=True)
     parcial = destino.with_suffix(destino.suffix + ".parcial")
-    with urllib.request.urlopen(url, timeout=120) as resposta, parcial.open("wb") as saida:  # noqa: S310
+    pedido = urllib.request.Request(url, headers={"User-Agent": AGENTE})  # noqa: S310
+    with urllib.request.urlopen(pedido, timeout=120) as resposta, parcial.open("wb") as saida:  # noqa: S310
         while bloco := resposta.read(_BLOCO):
             saida.write(bloco)
     try:
