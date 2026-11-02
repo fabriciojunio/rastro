@@ -42,3 +42,4 @@ logs/
 # Conjuntos de dados baixados na hora (Juliet, CVEfixes); nunca no repositório.
 /dados/
 /resultados/
+.coverage
