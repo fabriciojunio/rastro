@@ -1,18 +1,24 @@
-# Política de Segurança
+# Segurança
 
-## Como reportar uma vulnerabilidade
+## Como avisar de uma falha
 
-Não abra issue pública. Envie os detalhes para **camilaapereira.r@gmail.com** ou use o
-recurso **"Report a vulnerability"** (Security Advisories) deste repositório.
+Escreva para **fabricioad444@gmail.com** com o que encontrou e como reproduzir. É um projeto
+acadêmico mantido por uma pessoa: a resposta depende de disponibilidade.
 
-Inclua: descrição, passos para reproduzir, impacto estimado e, se possível, sugestão de correção.
+## O que interessa
 
-## Prazos
+O rastro lê código de terceiros e baixa um conjunto de dados da internet, então interessa
+principalmente:
 
-- Confirmação de recebimento: até 3 dias úteis.
-- Avaliação inicial: até 7 dias úteis.
-- Correção de falhas críticas: prioridade máxima.
+- arquivo de código que derrube ou trave a análise (o parser é o tree-sitter, em C);
+- caminho que faça o rastro ler fora da pasta indicada em `--alvo`;
+- qualquer forma de o download da Juliet ser aceito sem o SHA-256 conferir.
 
-## Versões suportadas
+## O que já está feito
 
-Apenas a versão mais recente da branch `main` recebe correções de segurança.
+- O pacote da Juliet só é usado depois de conferido o SHA-256 fixado no código; o download é só
+  por HTTPS e vai para um arquivo temporário, apagado se o hash não bater.
+- Nenhum modelo é carregado de arquivo, porque desserializar `pickle` executa código
+  ([ADR 0003](docs/adr/0003-sem-modelo-serializado.md)).
+- Links simbólicos e arquivos acima de 2 MB são ignorados na pasta analisada.
+- Dependências instaladas só com hash conferido; gitleaks, OSV-Scanner e Semgrep a cada push.
