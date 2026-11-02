@@ -103,6 +103,27 @@ def test_arquivo_grande_demais_e_ignorado(
     assert json.loads(capsys.readouterr().out)["candidatos"] == []
 
 
+def test_variantes_extrai_a_funcao_dos_arquivos_inteiros(
+    semente: tuple[Path, Path, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    vulneravel, corrigido, _ = semente
+    vulneravel.write_text("class A { int x() { return 1; } " + VULNERAVEL + " }", encoding="utf-8")
+    corrigido.write_text("class A { int x() { return 1; } " + CORRIGIDO + " }", encoding="utf-8")
+    # No arquivo corrigido o método se chama good; os dois precisam ter o mesmo nome.
+    corrigido.write_text(
+        corrigido.read_text(encoding="utf-8").replace("good(", "bad("), encoding="utf-8"
+    )
+    assert principal(_args(semente, "--json", "--funcao", "bad")) == 0
+    assert json.loads(capsys.readouterr().out)["candidatos"][0]["funcao"] == "variante"
+
+
+def test_variantes_avisa_quando_a_funcao_nao_existe(
+    semente: tuple[Path, Path, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert principal(_args(semente, "--funcao", "nao_existe")) == 2
+    assert "nao_existe" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize("quebra", ["vulneravel", "alvo", "igual", "top"])
 def test_entrada_invalida_sai_com_dois(
     semente: tuple[Path, Path, Path], capsys: pytest.CaptureFixture[str], quebra: str

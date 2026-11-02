@@ -88,16 +88,28 @@ def _modelo_treinado(juliet: Path, sha256: str, analisador: AnalisadorDeCodigo) 
     return modelo
 
 
+def _trecho_da_semente(
+    caminho: Path, funcao: str | None, linguagem: Linguagem, analisador: AnalisadorDeCodigo
+) -> str:
+    """O arquivo inteiro, ou só a função pedida quando vêm os arquivos completos do patch."""
+    codigo = _ler(caminho)
+    if funcao is None:
+        return codigo
+    for encontrada in analisador.funcoes(codigo, linguagem, str(caminho)):
+        if encontrada.nome == funcao:
+            return encontrada.codigo
+    raise ErroDeUso(f"a função {funcao} não está em {caminho}")
+
+
 def comando_variantes(argumentos: argparse.Namespace) -> int:
     linguagem = Linguagem(argumentos.linguagem)
     analisador = AnalisadorDeCodigo()
+    vulneravel, corrigido = (
+        _trecho_da_semente(Path(arquivo), argumentos.funcao_da_semente, linguagem, analisador)
+        for arquivo in (argumentos.vulneravel, argumentos.corrigido)
+    )
     try:
-        semente = Semente(
-            argumentos.id,
-            linguagem,
-            _ler(Path(argumentos.vulneravel)),
-            _ler(Path(argumentos.corrigido)),
-        )
+        semente = Semente(argumentos.id, linguagem, vulneravel, corrigido)
     except SementeInvalida as erro:
         raise ErroDeUso(str(erro)) from erro
     funcoes = _funcoes_do_alvo(Path(argumentos.alvo), linguagem, analisador)
@@ -248,6 +260,11 @@ def montar_analisador_de_argumentos() -> argparse.ArgumentParser:
     variantes.add_argument("--vulneravel", required=True, help="arquivo com a função vulnerável")
     variantes.add_argument("--corrigido", required=True, help="arquivo com a função corrigida")
     variantes.add_argument("--alvo", required=True, help="pasta com o código a analisar")
+    variantes.add_argument(
+        "--funcao",
+        dest="funcao_da_semente",
+        help="nome da função quando --vulneravel e --corrigido são arquivos inteiros",
+    )
     variantes.add_argument(
         "--linguagem", choices=[ling.value for ling in Linguagem], default="java"
     )
