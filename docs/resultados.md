@@ -122,3 +122,19 @@ que mexeu no mesmo construtor e em `introspectInterfaces`, que não tinha filtro
    casos. Com dois casos não dá para generalizar em nenhuma direção; o que dá para dizer é que,
    hoje, a heurística com a correção é mais previsível fora da Juliet, e é ela o padrão do
    `rastro variantes`.
+
+## Uso num projeto: brecha
+
+O [brecha](https://github.com/fabriciojunio/brecha) é uma API bancária vulnerável de propósito,
+com a versão vulnerável (`/v1`) e a corrigida (`/v2`) lado a lado. Semente: o método `conta`, que
+na `/v1` busca a conta pelo id sem conferir o dono (BOLA, BRECHA-001) e na `/v2` usa
+`contaDoDono`. Alvo: todo o código Java do projeto, 99 funções.
+
+```bash
+rastro variantes --id BRECHA-001 --vulneravel v1/ApiVulneravel.java \
+  --corrigido v2/ApiCorrigida.java --funcao conta --alvo ../brecha/src/main/java
+```
+
+Na `/v1`, três métodos buscam conta pelo id sem conferir o dono: `conta` (linha 72), `extrato`
+(101) e `transferir` (127). O rastro pôs os três nas três primeiras posições, com a heurística. As
+versões corrigidas de `conta` e `extrato` na `/v2` foram para a lista de contornos.
