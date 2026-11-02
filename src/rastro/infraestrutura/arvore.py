@@ -16,7 +16,7 @@ from dataclasses import dataclass
 import tree_sitter_c
 import tree_sitter_java
 import tree_sitter_php
-from tree_sitter import Language, Node, Parser
+from tree_sitter import Language, Node, Parser, Tree
 
 from rastro.dominio.modelos import Funcao, Linguagem
 
@@ -107,10 +107,11 @@ class AnalisadorDeCodigo:
         regras = _REGRAS[linguagem]
         if linguagem is Linguagem.PHP and not codigo.lstrip().startswith("<?"):
             codigo = regras.prefixo + codigo
-        fonte = codigo.encode("utf-8")
-        raiz = self._parsers[linguagem].parse(fonte).root_node
+        # A árvore fica numa variável enquanto os nós são usados: o nó não
+        # segura a árvore, e sem ela o percurso lia memória já liberada.
+        arvore = self._parsers[linguagem].parse(codigo.encode("utf-8"))
         encontradas = []
-        for no in _percorrer(raiz):
+        for no in _percorrer(arvore.root_node):
             if no.type in regras.funcoes:
                 encontradas.append(
                     Funcao(
@@ -125,26 +126,23 @@ class AnalisadorDeCodigo:
 
     def tokens(self, trecho: str, linguagem: Linguagem) -> tuple[str, ...]:
         """Tokens abstraídos do trecho, sem comentários."""
-        raiz, inicio, fim = self._analisar_trecho(trecho, linguagem)
-        regras = _REGRAS[linguagem]
-        saida: list[str] = []
-        _tokenizar(raiz, regras, inicio, fim, saida)
-        return tuple(saida)
+        arvore, inicio, fim = self._analisar_trecho(trecho, linguagem)
+        return tuple(_tokenizar(arvore.root_node, _REGRAS[linguagem], inicio, fim))
 
     def chamadas(self, trecho: str, linguagem: Linguagem) -> frozenset[str]:
         """Nomes das funções e métodos chamados no trecho."""
-        raiz, inicio, fim = self._analisar_trecho(trecho, linguagem)
+        arvore, inicio, fim = self._analisar_trecho(trecho, linguagem)
         regras = _REGRAS[linguagem]
         return frozenset(
             _texto(no)
-            for no in _percorrer(raiz)
+            for no in _percorrer(arvore.root_node)
             if inicio <= no.start_byte
             and no.end_byte <= fim
             and no.type in regras.identificadores
             and _e_nome_chamado(no, regras)
         )
 
-    def _analisar_trecho(self, trecho: str, linguagem: Linguagem) -> tuple[Node, int, int]:
+    def _analisar_trecho(self, trecho: str, linguagem: Linguagem) -> tuple[Tree, int, int]:
         """Envolve o trecho para ele virar código válido e devolve onde ele começa e acaba.
 
         Um método Java solto não é uma unidade de compilação; dentro de uma
@@ -161,13 +159,16 @@ class AnalisadorDeCodigo:
         inicio = len(prefixo.encode("utf-8"))
         fim = inicio + len(trecho.encode("utf-8"))
         fonte = (prefixo + trecho + sufixo).encode("utf-8")
-        return self._parsers[linguagem].parse(fonte).root_node, inicio, fim
+        return self._parsers[linguagem].parse(fonte), inicio, fim
 
 
-def _percorrer(no: Node) -> Iterator[Node]:
-    yield no
-    for filho in no.children:
-        yield from _percorrer(filho)
+def _percorrer(raiz: Node) -> Iterator[Node]:
+    """Pré-ordem com pilha explícita: código gerado passa do limite de recursão."""
+    pilha = [raiz]
+    while pilha:
+        no = pilha.pop()
+        yield no
+        pilha.extend(reversed(no.children))
 
 
 def _texto(no: Node) -> str:
@@ -213,13 +214,17 @@ def _token_do_no(no: Node, regras: _Regras) -> str | None:
     return None
 
 
-def _tokenizar(no: Node, regras: _Regras, inicio: int, fim: int, saida: list[str]) -> None:
-    fora_do_trecho = no.end_byte <= inicio or no.start_byte >= fim
-    if fora_do_trecho or no.type in regras.comentarios:
-        return
-    token = _token_do_no(no, regras)
-    if token is not None:
-        saida.append(token)
-        return
-    for filho in no.children:
-        _tokenizar(filho, regras, inicio, fim, saida)
+def _tokenizar(raiz: Node, regras: _Regras, inicio: int, fim: int) -> list[str]:
+    saida: list[str] = []
+    pilha = [raiz]
+    while pilha:
+        no = pilha.pop()
+        fora_do_trecho = no.end_byte <= inicio or no.start_byte >= fim
+        if fora_do_trecho or no.type in regras.comentarios:
+            continue
+        token = _token_do_no(no, regras)
+        if token is not None:
+            saida.append(token)
+        else:
+            pilha.extend(reversed(no.children))
+    return saida

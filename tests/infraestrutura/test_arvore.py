@@ -121,3 +121,15 @@ def test_chamadas_por_linguagem(
 def test_trecho_java_que_ja_tem_classe_nao_e_envolvido(analisador: AnalisadorDeCodigo) -> None:
     tokens = analisador.tokens("class A { void f() {} }", Linguagem.JAVA)
     assert tokens[:3] == ("class", "ID", "{")
+
+
+def test_aninhamento_profundo_nao_estoura(analisador: AnalisadorDeCodigo) -> None:
+    # Código gerado chega a milhares de níveis; recursão em Python para em mil.
+    niveis = 3000
+    corpo = "if (a) {" * niveis + "g();" + "}" * niveis
+    codigo = f"class A {{ void f() {{ {corpo} }} }}"
+    funcoes = analisador.funcoes(codigo, Linguagem.JAVA, "Fundo.java")
+    assert [f.nome for f in funcoes] == ["f"]
+    tokens = analisador.tokens(funcoes[0].codigo, Linguagem.JAVA)
+    assert tokens.count("if") == niveis
+    assert "g" in tokens
