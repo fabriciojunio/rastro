@@ -1,0 +1,21 @@
+# Hooks locais: usam as ferramentas já instaladas pelo lock com hash, sem baixar
+# nada de repositório externo na hora do commit.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format --check
+        language: system
+        types: [python]
+      - id: ruff
+        name: ruff check
+        entry: ruff check
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy estrito
+        entry: mypy src tests
+        language: system
+        pass_filenames: false
+        types: [python]

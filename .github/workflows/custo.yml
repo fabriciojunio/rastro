@@ -1,0 +1,119 @@
+name: Custo em repositório real
+
+# Pergunta 4: quanto custa rodar o rastro numa base de código inteira. Mede tempo
+# e memória do rastro variantes no php-src (C) e no spring-framework (Java), nos
+# commits dos casos reais. Também é um teste de regressão em código de verdade:
+# reprova se o rastro deixar de achar o que achava.
+#
+# Os repositórios vêm por git fetch do commit exato: o próprio git confere o
+# conteúdo pelo hash do commit. As sementes vêm do rastro caso, com SHA-256.
+on:
+  pull_request:
+    branches: ["produção"]
+    paths:
+      - "src/**"
+      - "requisitos/**"
+      - ".github/workflows/custo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Um envio novo no PR cancela a rodada anterior, que já mede código superado.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  custo:
+    name: ${{ matrix.nome }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nome: php-src
+            caso: php
+            repositorio: https://github.com/php/php-src
+            commit: 4b15f5d4ec750b31ec8911f5eb0915a45f96feca
+            linguagem: c
+            funcao: main
+            vulneravel: php_php-src_f5936cceeb26_cgi_main.c
+            corrigido: php_php-src_0556103f6a34_cgi_main.c
+            contorno: sapi/cgi/cgi_main.c|main
+            variante: ""
+          - nome: spring-framework
+            caso: spring
+            repositorio: https://github.com/spring-projects/spring-framework
+            commit: 1627f57f1f77abe17dd607c75476b9e4cb22ffbb
+            linguagem: java
+            funcao: CachedIntrospectionResults
+            vulneravel: spring-projects_spring-framework_dea5918d66aa_CachedIntrospectionResults.java
+            corrigido: spring-projects_spring-framework_3a5af35d37c7_CachedIntrospectionResults.java
+            contorno: spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java|CachedIntrospectionResults
+            variante: spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java|introspectInterfaces
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Instalar as dependências travadas
+        run: python -m pip install --require-hashes --no-deps -r requisitos/base.txt
+
+      - name: Baixar as sementes conferidas
+        env:
+          PYTHONPATH: src
+        run: python -m rastro caso "${{ matrix.caso }}"
+
+      - name: Buscar o repositório no commit do caso
+        run: |
+          git init -q alvo
+          git -C alvo fetch -q --depth 1 "${{ matrix.repositorio }}" "${{ matrix.commit }}"
+          git -C alvo checkout -q FETCH_HEAD
+          test "$(git -C alvo rev-parse HEAD)" = "${{ matrix.commit }}"
+
+      - name: Rodar e medir
+        env:
+          PYTHONPATH: src
+        run: |
+          set -o pipefail
+          /usr/bin/time -v -o tempo.txt python -m rastro variantes \
+            --id "${{ matrix.caso }}" --linguagem "${{ matrix.linguagem }}" \
+            --vulneravel "dados/casos/${{ matrix.vulneravel }}" \
+            --corrigido "dados/casos/${{ matrix.corrigido }}" \
+            --funcao "${{ matrix.funcao }}" --alvo alvo --top 1000 --json > saida.json
+          grep -E "Elapsed|Maximum resident" tempo.txt
+
+      # Cobra o que o rastro garante (o lugar do contorno na lista de contornos)
+      # e mede, sem reprovar, a posição da variante no repositório inteiro.
+      - name: Conferir o contorno e medir a variante
+        env:
+          PYTHONPATH: src
+        run: |
+          variante=()
+          if [ -n "${{ matrix.variante }}" ]; then variante=(--variante "${{ matrix.variante }}"); fi
+          python -m rastro.avaliacao.regressao saida.json --contorno "${{ matrix.contorno }}" "${variante[@]}"
+
+      - name: Resumo na página da execução
+        if: always()
+        run: |
+          {
+            echo "## ${{ matrix.nome }} no commit ${{ matrix.commit }}"
+            cat medida.txt || true
+            grep -E "Elapsed|Maximum resident" tempo.txt || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: custo-${{ matrix.nome }}
+          path: |
+            saida.json
+            tempo.txt
+            medida.txt
+          retention-days: 90

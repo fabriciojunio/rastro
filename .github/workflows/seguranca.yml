@@ -1,8 +1,11 @@
 name: Segurança
 
+# Gratuito para repositório privado de conta pessoal: gitleaks, OSV-Scanner e
+# Semgrep na edição comunitária. O CodeQL exige o GitHub Advanced Security em
+# repositório privado.
 on:
   push:
-    branches: [main]
+    branches: ["produção", "homologação"]
   pull_request:
   schedule:
     - cron: "0 6 * * 1"
@@ -10,38 +13,53 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   segredos:
     name: Varredura de segredos (gitleaks)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      # Antes de usar em produção, fixe cada action pelo SHA do commit da versão.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Autoria do histórico
+        run: |
+          if git log --format=%B | grep -Eiq '^co-authored-by:.*(claude|anthropic)|generated with.*claude'; then
+            echo "Commit com coautoria de ferramenta de IA no histórico"
+            exit 1
+          fi
 
   dependencias:
     name: Vulnerabilidades em dependências (osv-scanner)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          scan-args: --recursive ./
+          persist-credentials: false
+      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            -L requirements.txt:requisitos/dev.txt
 
-  codeql:
-    name: Análise estática (CodeQL)
+  sast:
+    name: Análise estática (Semgrep)
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Ajuste para as linguagens do projeto.
-          languages: javascript-typescript, python
-      - uses: github/codeql-action/analyze@v3
+          persist-credentials: false
+      - name: Rodar o Semgrep
+        run: |
+          pipx run --spec semgrep==1.181.0 semgrep scan \
+            --config p/python --config p/secrets \
+            --metrics=off --error src
