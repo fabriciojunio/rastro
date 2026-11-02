@@ -1,9 +1,13 @@
 # Resultados
 
-Execução da CI [41530095425](https://github.com/fabriciojunio/rastro/actions/runs/41530095425),
-commit `a75107d`, Juliet Java 1.3 inteira (SHA-256 conferido), 55.357 métodos rotulados. O JSON
+Execução da CI [41537500845](https://github.com/fabriciojunio/rastro/actions/runs/41537500845),
+commit `2ef14ba`, Juliet Java 1.3 inteira (SHA-256 conferido), 55.357 métodos rotulados. O JSON
 completo, com a linha de cada semente, fica como artefato da execução; o resumo está em
 [`dados/`](dados/). Métricas definidas na [metodologia](metodologia.md#8-avaliação).
+
+A execução anterior ([41530095425](https://github.com/fabriciojunio/rastro/actions/runs/41530095425),
+commit `a75107d`) deu exatamente os mesmos números no escopo `cwe` com n-grama 3: o experimento é
+determinístico, com semente aleatória fixa.
 
 ## RQ1 e RQ2, escopo `cwe`
 
@@ -50,6 +54,42 @@ Os maiores ganhos estão em classes com correção bem marcada:
 | CWE-36, path traversal absoluto | 12 | 0,401 | 0,995 |
 | CWE-643, injeção XPath | 12 | 0,407 | 1,000 |
 | CWE-90, injeção LDAP | 12 | 0,390 | 0,994 |
+
+### Sensibilidade ao tamanho do n-grama
+
+O n-grama de 3 tokens foi escolhido antes do experimento. Rodando o escopo `cwe` com 2 e 4:
+
+| n | AP modelo completo | AP Jaccard | AP Jaccard menos a correção | Corrigidos no top 10 (modelo) |
+|---|---|---|---|---|
+| 2 | 0,775 [0,760; 0,789] | 0,415 | 0,583 | 4,4% |
+| 3 | 0,748 [0,733; 0,763] | 0,413 | 0,556 | 2,6% |
+| 4 | 0,765 [0,751; 0,778] | 0,408 | 0,559 | 1,2% |
+
+A conclusão não muda com o n: o modelo fica entre 0,748 e 0,775, bem acima do Jaccard nos três, e
+o código corrigido no topo fica abaixo de 5%. O n = 3 não é o melhor dos três, o que é coerente
+com ele não ter sido ajustado olhando o resultado.
+
+### Importância das características
+
+Queda da precisão média quando cada característica é embaralhada, nos pares de teste de cada
+dobra (modelo completo, escopo `cwe`, n = 3; média e desvio entre as 5 dobras):
+
+| Característica | Importância |
+|---|---|
+| `falha_presente` | 0,422 ± 0,044 |
+| `correcao_presente` | 0,192 ± 0,081 |
+| `contencao_vulneravel` | 0,120 ± 0,016 |
+| `sim_corrigido` | 0,108 ± 0,063 |
+| `sim_vulneravel` | 0,095 ± 0,043 |
+| `sim_chamadas` | 0,049 ± 0,018 |
+| `log_razao_tamanho` | 0,035 ± 0,018 |
+| `chamadas_adicionadas_presentes` | −0,001 ± 0,012 |
+| `chamadas_removidas_presentes` | −0,001 ± 0,008 |
+
+As duas mais importantes são as da assinatura da correção. É uma segunda confirmação da RQ2,
+independente da ablação. As duas características de chamada que a correção removeu ou acrescentou
+não contribuem: quase toda a informação delas já está nos n-gramas, que incluem o nome da chamada.
+Com n = 2 e n = 4 a ordem das duas primeiras é a mesma.
 
 ## Escopo `familia`
 

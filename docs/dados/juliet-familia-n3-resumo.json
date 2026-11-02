@@ -1,6 +1,6 @@
 {
-  "origem": "https://github.com/fabriciojunio/rastro/actions/runs/41530095425",
-  "commit": "a75107d",
+  "origem": "https://github.com/fabriciojunio/rastro/actions/runs/41537500845",
+  "commit": "2ef14ba",
   "configuracao": {
     "juliet_sha256": "d985f4177c2bcd7b03455a05c1c8f2e755f55c9eb250accd052f05f877347e60",
     "cwes": [
@@ -96,6 +96,7 @@
     ],
     "escopo": "familia",
     "parentes_por_tarefa": 300,
+    "tamanho_do_ngrama": 3,
     "outros_por_tarefa": 200,
     "dobras": 5,
     "semente_aleatoria": 42,
@@ -112,8 +113,8 @@
     ]
   },
   "tempo_segundos": {
-    "preparo": 55.3,
-    "total": 141.6
+    "preparo": 73.2,
+    "total": 269.0
   },
   "resumo": {
     "clone_exato": {
@@ -475,6 +476,44 @@
         "diferenca_media": -0.05535499398315283,
         "p": 1.0490273927057736e-18
       }
+    }
+  },
+  "importancia_modelo_completo": {
+    "contencao_vulneravel": {
+      "media": 0.6657872921304591,
+      "desvio": 0.03683562221245596
+    },
+    "falha_presente": {
+      "media": 0.2732413293793856,
+      "desvio": 0.0798958129152563
+    },
+    "log_razao_tamanho": {
+      "media": 0.019527330791786715,
+      "desvio": 0.016211410874116042
+    },
+    "correcao_presente": {
+      "media": 0.01202767990018964,
+      "desvio": 0.00635850087311733
+    },
+    "sim_chamadas": {
+      "media": 0.010807707752259007,
+      "desvio": 0.006959946887597144
+    },
+    "sim_vulneravel": {
+      "media": 0.006875728326705563,
+      "desvio": 0.008032115179436103
+    },
+    "sim_corrigido": {
+      "media": 0.004454863894618195,
+      "desvio": 0.003242933634227354
+    },
+    "chamadas_removidas_presentes": {
+      "media": 3.938113066888071e-05,
+      "desvio": 6.912490884725247e-05
+    },
+    "chamadas_adicionadas_presentes": {
+      "media": 1.310418982941375e-05,
+      "desvio": 1.4991775896392509e-05
     }
   }
 }
