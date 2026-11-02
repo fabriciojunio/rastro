@@ -11,6 +11,7 @@ from typing import Protocol
 
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.inspection import permutation_importance
 
 from rastro.aplicacao.caracteristicas import (
     NOMES,
@@ -111,13 +112,18 @@ class ModeloAprendido:
         linhas = [[x[i] for i in indices] for x in (vetor(semente, c) for c in candidatos)]
         return np.asarray(linhas, dtype=float).reshape(len(candidatos), len(indices))
 
+    def _dados(
+        self,
+        pares: Sequence[tuple[SementeAnalisada, Sequence[CandidatoAnalisado], Sequence[bool]]],
+    ) -> tuple[list[np.ndarray], list[bool]]:
+        return [self._matriz(s, cs) for s, cs, _ in pares], [r for _, _, rs in pares for r in rs]
+
     def treinar(
         self,
         pares: Sequence[tuple[SementeAnalisada, Sequence[CandidatoAnalisado], Sequence[bool]]],
     ) -> None:
         """Aprende com sementes já rotuladas: True quando o candidato é variante."""
-        matrizes = [self._matriz(s, cs) for s, cs, _ in pares]
-        rotulos = [r for _, _, rs in pares for r in rs]
+        matrizes, rotulos = self._dados(pares)
         if not matrizes or len(set(rotulos)) < 2:
             raise ValueError("o treino precisa de exemplos positivos e negativos")
         modelo = HistGradientBoostingClassifier(
@@ -129,6 +135,31 @@ class ModeloAprendido:
         )
         modelo.fit(np.vstack(matrizes), np.asarray(rotulos, dtype=int))
         self._modelo = modelo
+
+    def importancia(
+        self,
+        pares: Sequence[tuple[SementeAnalisada, Sequence[CandidatoAnalisado], Sequence[bool]]],
+        repeticoes: int = 5,
+    ) -> dict[str, float]:
+        """Quanto a precisão média cai quando cada característica é embaralhada.
+
+        Medida nos pares dados, que devem ser de teste: importância medida no
+        próprio treino mede o que o modelo decorou.
+        """
+        if self._modelo is None:
+            raise ModeloNaoTreinado(f"o modelo {self.nome} ainda não foi treinado")
+        matrizes, rotulos = self._dados(pares)
+        resultado = permutation_importance(
+            self._modelo,
+            np.vstack(matrizes),
+            np.asarray(rotulos, dtype=int),
+            scoring="average_precision",
+            n_repeats=repeticoes,
+            random_state=self.semente_aleatoria,
+        )
+        return {
+            nome: float(v) for nome, v in zip(self.colunas, resultado.importances_mean, strict=True)
+        }
 
     def pontuar(
         self, semente: SementeAnalisada, candidatos: Sequence[CandidatoAnalisado]

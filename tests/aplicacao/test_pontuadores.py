@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from rastro.aplicacao.caracteristicas import (
@@ -90,6 +92,26 @@ def test_modelo_com_parte_das_caracteristicas(
     modelo = ModeloAprendido("sem_correcao", CARACTERISTICAS_SEM_CORRECAO)
     modelo.treinar([(semente, candidatos, [True, True, False, False])] * 30)
     assert len(modelo.pontuar(semente, candidatos)) == 4
+
+
+def test_importancia_por_permutacao(
+    semente: SementeAnalisada, candidatos: list[CandidatoAnalisado]
+) -> None:
+    modelo = ModeloAprendido("completo")
+    pares = [(semente, candidatos, [True, True, False, False])] * 30
+    modelo.treinar(pares)
+    importancia = modelo.importancia(pares)
+    assert set(importancia) == set(modelo.colunas)
+    assert all(math.isfinite(v) for v in importancia.values())
+    # Pelo menos uma característica tem de importar para separar os dois lados.
+    assert max(importancia.values()) > 0
+
+
+def test_importancia_sem_treino_e_recusada(
+    semente: SementeAnalisada, candidatos: list[CandidatoAnalisado]
+) -> None:
+    with pytest.raises(ModeloNaoTreinado):
+        ModeloAprendido("x").importancia([(semente, candidatos, [True, False, False, False])])
 
 
 def test_modelo_sem_treino_recusa_pontuar(
