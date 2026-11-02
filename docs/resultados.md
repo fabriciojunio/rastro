@@ -70,31 +70,55 @@ significativa (p = 0,56). É por isso que o escopo `cwe` é o resultado principa
 O clone exato vai mal nos dois escopos porque a mudança de estrutura de controle já quebra a
 igualdade dos tokens. O VUDDY foi feito para clone, e variante de fluxo não é clone tipo 2.
 
-## RQ3, caso real: PHP CVE-2012-1823 e CVE-2024-4577
+## RQ3, casos reais
 
-Semente: a função `main()` de `sapi/cgi/cgi_main.c` antes e depois do commit
+Dois casos em que a correção seguinte refez o trabalho da anterior. Em cada um, a semente é a
+função antes e depois da primeira correção, e o alvo é o arquivo no commit pai da segunda. Os
+arquivos são baixados nos commits exatos e conferidos por SHA-256 (`rastro caso php` e
+`rastro caso spring`). Empate conta contra a função esperada.
+
+### PHP: CVE-2012-1823 e CVE-2024-4577 (C)
+
+Semente: `main()` de `sapi/cgi/cgi_main.c` antes e depois do commit
 [`0556103f`](https://github.com/php/php-src/commit/0556103f6a347308351436897b3b632450504dd0)
-("Fix for CVE-2012-1823"). Alvo: as 44 funções do mesmo arquivo no commit
-[`4b15f5d4`](https://github.com/php/php-src/commit/4b15f5d4ec750b31ec8911f5eb0915a45f96feca),
-pai da correção da CVE-2024-4577
-([`93826731`](https://github.com/php/php-src/commit/938267314835de3c2ed1a3da4f2959f1d2709468)).
-A CVE-2024-4577 foi corrigida na mesma função `main()`.
+("Fix for CVE-2012-1823"). Alvo: as 44 funções do arquivo no commit
+[`4b15f5d4`](https://github.com/php/php-src/commit/4b15f5d4ec750b31ec8911f5eb0915a45f96feca), pai
+da correção da CVE-2024-4577
+([`93826731`](https://github.com/php/php-src/commit/938267314835de3c2ed1a3da4f2959f1d2709468)),
+feita na mesma função.
 
-| Pontuador | Posição do `main()` |
-|---|---|
-| Clone exato | 44 de 44 |
-| Jaccard | **1 de 44** |
-| Jaccard menos a correção | 44 de 44 |
+### Spring: CVE-2010-1622 e CVE-2022-22965 (Java)
 
-Reproduzível com `rastro caso php`: os três arquivos são baixados nos commits acima e conferidos
-por SHA-256. Empate conta contra a função esperada.
+Semente: o construtor de `CachedIntrospectionResults` antes e depois do commit
+[`3a5af35d`](https://github.com/spring-projects/spring-framework/commit/3a5af35d37c79d0644d49b93f792a4c18fe8eb71),
+de 27/05/2010, que acrescentou o filtro do `classLoader`; a CVE-2010-1622 foi corrigida na versão
+3.0.3, lançada depois. Alvo: as 17 funções do arquivo no commit
+[`1627f57f`](https://github.com/spring-projects/spring-framework/commit/1627f57f1f77abe17dd607c75476b9e4cb22ffbb),
+pai da correção do Spring4Shell
+([`002546b3`](https://github.com/spring-projects/spring-framework/commit/002546b3e4b8d791ea6acccb81eb3168f51abb15)),
+que mexeu no mesmo construtor e em `introspectInterfaces`, que não tinha filtro nenhum.
 
-O resultado mostra um limite do método. O `main()` de 2024 já tinha a correção de 2012
-(`correcao_presente` = 0,875, `falha_presente` = 0): a falha de 2024 é um contorno de uma correção
-incompleta, e quem rebaixa o código corrigido rebaixa justamente o lugar do contorno. O MVP tem o
-mesmo limite, por construção.
+### Posição de cada função esperada
 
-A consequência prática é que a assinatura da correção serve para duas listas, e não uma: as
-variantes sem a correção (o que o experimento mede) e os lugares que receberam a correção, onde se
-procura contorno. O `rastro variantes` mostra as duas, e no caso do PHP o `main()` aparece na
-segunda: o que o ranqueamento rebaixa, a lista de contornos devolve.
+| Pontuador | PHP `main` (contorno) | Spring construtor (contorno) | Spring `introspectInterfaces` (variante) |
+|---|---|---|---|
+| Clone exato | 44 de 44 | 17 de 17 | 17 de 17 |
+| Jaccard | **1 de 44** | **1 de 17** | 3 de 17 |
+| Jaccard menos a correção | 44 de 44 | 17 de 17 | **3 de 17** |
+| Modelo treinado na Juliet (escopo `cwe`) | 39 de 44 | **1 de 17** | 12 de 17 |
+| Está na lista de contornos | sim | sim | não (correto: não tem a correção) |
+
+### Leitura
+
+1. **Correção incompleta.** Nos dois casos, a segunda falha está no lugar que recebeu a primeira
+   correção. Quem rebaixa o código corrigido rebaixa esse lugar: a heurística põe os dois em
+   último. O MVP tem o mesmo limite, por construção. A lista de contornos devolve os dois.
+2. **Variante de verdade.** `introspectInterfaces` não tinha filtro nenhum: é uma variante sem a
+   correção. A heurística a põe em 3º de 17, e ela não aparece na lista de contornos, como deve.
+   As duas listas juntas cobrem os dois lugares que a correção de 2022 mudou.
+3. **Transferência.** O modelo treinado na Juliet não se comporta de forma estável no código real:
+   acerta o construtor do Spring, mas põe a variante do Spring em 12º e o `main` do PHP em 39º.
+   O ganho grande medido na Juliet não se transfere de forma confiável para código real nestes
+   casos. Com dois casos não dá para generalizar em nenhuma direção; o que dá para dizer é que,
+   hoje, a heurística com a correção é mais previsível fora da Juliet, e é ela o padrão do
+   `rastro variantes`.
