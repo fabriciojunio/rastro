@@ -160,12 +160,148 @@ ferramenta trabalha com Java, PHP e C por meio de um analisador comum.
 
 ## 4 Metodologia
 
-Ver [metodologia.md](metodologia.md), seções 4 a 9, e o guia de reprodução em
-[reproducao.md](reproducao.md).
+### 4.1 Visão geral
+
+A Figura 1 mostra o funcionamento do rastro. A semente (a função antes e depois da correção) e a
+base de código passam pelo mesmo analisador, que transforma cada função numa sequência de tokens
+abstraídos. Da semente sai a assinatura da correção. Para cada função candidata calculam-se nove
+características do par, que alimentam o modelo ou a heurística (Lista 1) e os limiares que
+identificam os lugares que já receberam a correção (Lista 2).
+
+**Figura 1 – Funcionamento do rastro**
+
+![Funcionamento do rastro](figuras/fig6-funcionamento.png)
+
+Fonte: elaborado pelo autor (2026).
+
+### 4.2 Representação do código
+
+O código é lido com o tree-sitter, que tem gramática para Java, PHP e C. Cada função vira uma
+sequência de tokens em que nomes de variáveis viram `ID`, textos viram `STR` e números viram `NUM`,
+à maneira do VUDDY (KIM et al., 2017). O nome das funções chamadas e o dos tipos ficam com o texto
+original, porque caracterizam a falha. Comentários e o nome da própria função são descartados:
+na Juliet os comentários dizem "POTENTIAL FLAW" e "FIX", e o nome da função (`bad`, `goodG2B`)
+entrega o rótulo. A comparação usa trigramas de tokens.
+
+### 4.3 Assinatura da correção e características
+
+A assinatura da correção é formada pelo conjunto de trigramas que a correção removeu e pelo que ela
+acrescentou. As nove características do par (semente, candidato) são: semelhança de Jaccard com o
+código vulnerável e com o corrigido; contenção dos trigramas vulneráveis no candidato; fração dos
+trigramas removidos e dos acrescentados presentes no candidato; semelhança dos nomes de função
+chamados; fração das chamadas removidas e acrescentadas presentes; e o logaritmo da razão de
+tamanho.
+
+### 4.4 Métodos comparados
+
+Foram comparados cinco pontuadores: o clone exato, no estilo do VUDDY; a semelhança de Jaccard; a
+heurística "Jaccard menos a correção", sem aprendizado; o modelo de gradient boosting só com as
+características que não olham a correção (ablação); e o modelo completo, com as nove. O modelo é o
+`HistGradientBoostingClassifier` do scikit-learn, com 200 iterações, taxa de aprendizado 0,1 e peso
+de classe balanceado, sem busca de hiperparâmetros.
+
+### 4.5 Dados
+
+O gabarito é a Juliet Test Suite para Java 1.3 do NIST (BOLAND; BLACK, 2012), baixada do SARD e
+conferida pelo SHA-256. Em cada arquivo de caso, `bad()` tem a falha e os `good*()` são o mesmo
+código corrigido. Família é a CWE com a variante funcional; a semente é o `bad()` do fluxo 01 com a
+correção que corrige o uso do dado. Foram usados os fluxos de 01 a 19, em que a falha cabe numa
+função: 55.357 métodos rotulados.
+
+Em dois escopos: no escopo família, os parentes da semente são as outras variantes de fluxo da
+mesma família; no escopo cwe, são até 300 funções de outras famílias da mesma CWE, sem a própria.
+Em ambos entram 200 funções sorteadas de outras CWEs.
+
+### 4.6 Avaliação
+
+Validação cruzada em cinco dobras agrupadas por CWE, de modo que o modelo é sempre testado em
+classes de falha que não viu. No treino saem até os candidatos que vêm das CWEs de teste. Para cada
+semente medem-se a precisão média (AP), o MRR, recall e precisão nos dez primeiros e a fração dos
+dez primeiros que é código já corrigido. As médias vêm com intervalo de 95% por bootstrap e as
+comparações usam o teste de Wilcoxon pareado por semente. Tudo roda na integração contínua com
+semente aleatória fixa, e duas execuções separadas deram os mesmos números.
 
 ## 5 Resultados
 
-Ver [resultados.md](resultados.md).
+### 5.1 RQ1: ranqueamento de variantes
+
+No escopo cwe, com 870 sementes em 61 CWEs, o modelo completo obteve precisão média de 0,748,
+contra 0,413 do Jaccard e 0,160 do clone exato (Figura 2). Os intervalos de confiança não se cruzam,
+e todas as diferenças têm p < 10⁻⁶ no teste de Wilcoxon.
+
+**Figura 2 – Precisão média por método, escopo cwe**
+
+![Precisão média por método](figuras/fig1-ap-escopo-cwe.png)
+
+Fonte: elaborado pelo autor (2026), com dados da execução 41537500845 da integração contínua.
+
+### 5.2 RQ2: código já corrigido no topo
+
+Entre os dez primeiros resultados do Jaccard, 36,4% são código já corrigido; no modelo completo,
+2,6% (Figura 3). O mesmo modelo, sem as características que olham a correção, deixa 27,6%.
+
+**Figura 3 – Código já corrigido entre os dez primeiros resultados**
+
+![Código já corrigido no topo](figuras/fig2-corrigidos-no-topo.png)
+
+Fonte: elaborado pelo autor (2026).
+
+A importância por permutação confirma o resultado por outro caminho: as duas características mais
+importantes são as da assinatura da correção (Figura 4).
+
+**Figura 4 – Importância das características**
+
+![Importância das características](figuras/fig4-importancia.png)
+
+Fonte: elaborado pelo autor (2026).
+
+### 5.3 Os dois escopos e a sensibilidade
+
+No escopo família, o Jaccard chega a 0,958 de precisão média, porque as variantes de fluxo são
+quase clones; no escopo cwe, cai para 0,413 (Figura 5). O resultado principal não depende do
+tamanho do n-grama: com 2, 3 e 4 tokens o modelo fica entre 0,748 e 0,775 (Figura 6).
+
+**Figura 5 – Precisão média nos dois escopos**
+
+![Os dois escopos](figuras/fig5-escopos.png)
+
+Fonte: elaborado pelo autor (2026).
+
+**Figura 6 – Sensibilidade ao tamanho do n-grama**
+
+![Sensibilidade ao n-grama](figuras/fig3-sensibilidade-ngrama.png)
+
+Fonte: elaborado pelo autor (2026).
+
+### 5.4 RQ3: casos reais
+
+**Quadro 1 – Posição dos lugares corrigidos pela segunda correção**
+
+| Método | PHP `main` (contorno) | Spring construtor (contorno) | Spring `introspectInterfaces` (variante) |
+|---|---|---|---|
+| Clone exato | 44 de 44 | 17 de 17 | 17 de 17 |
+| Jaccard | 1 de 44 | 1 de 17 | 3 de 17 |
+| Jaccard menos a correção | 44 de 44 | 17 de 17 | 3 de 17 |
+| Modelo treinado na Juliet | 39 de 44 | 1 de 17 | 12 de 17 |
+| Na lista de contornos | sim | sim | não |
+
+Fonte: elaborado pelo autor (2026).
+
+Nos dois casos, a segunda falha estava no lugar que tinha recebido a primeira correção, e a lista
+de contornos o apontou. A variante sem correção do Spring ficou em 3º de 17 com a heurística. Num
+projeto do próprio autor, o brecha, os três métodos com controle de acesso quebrado ficaram nas três
+primeiras posições entre 99 funções.
+
+### 5.5 RQ4: custo
+
+**Tabela 1 – Custo em repositório inteiro**
+
+| Repositório | Funções | Tempo | Memória |
+|---|---|---|---|
+| php-src | 16.845 | 24,0 s | 381 MB |
+| spring-framework | 75.712 | 21,8 s | 670 MB |
+
+Fonte: elaborado pelo autor (2026), executor padrão do GitHub Actions.
 
 ## 6 Discussão
 
