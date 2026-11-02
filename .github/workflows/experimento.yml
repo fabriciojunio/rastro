@@ -1,0 +1,62 @@
+name: Experimento
+
+# Roda o experimento do TCC sobre a Juliet Java 1.3 inteira, nos dois escopos.
+# Fica na CI porque a máquina de desenvolvimento não tem disco para isso. O
+# pacote do NIST SARD só é usado depois de conferido o SHA-256 fixado no código.
+on:
+  pull_request:
+    branches: ["produção"]
+    paths:
+      - "src/**"
+      - "requisitos/**"
+      - ".github/workflows/experimento.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experimento:
+    name: Juliet Java 1.3 (escopo ${{ matrix.escopo }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        escopo: [familia, cwe]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Instalar as dependências travadas
+        run: python -m pip install --require-hashes --no-deps -r requisitos/base.txt
+
+      - name: Rodar o experimento
+        env:
+          PYTHONPATH: src
+        run: |
+          python -m rastro experimento --baixar --escopo "${{ matrix.escopo }}" \
+            --saida "resultados/juliet-${{ matrix.escopo }}.json" | tee "resultados-${{ matrix.escopo }}.txt"
+
+      - name: Resumo na página da execução
+        if: success()
+        run: |
+          {
+            echo "## Juliet Java 1.3, escopo ${{ matrix.escopo }}"
+            echo '```'
+            cat "resultados-${{ matrix.escopo }}.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: experimento-${{ matrix.escopo }}
+          path: resultados/
+          retention-days: 90
+          if-no-files-found: warn
