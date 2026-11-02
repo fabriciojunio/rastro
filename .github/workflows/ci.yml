@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: ["produção", "homologação"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Lint, tipos e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      # Cada pacote é conferido contra o hash do lock: um arquivo trocado no
+      # caminho não instala.
+      - name: Instalar as dependências travadas
+        run: python -m pip install --require-hashes --no-deps -r requisitos/dev.txt
+
+      - name: Formatação
+        run: ruff format --check src tests
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Tipos
+        run: mypy src tests
+
+      - name: Testes
+        run: pytest
