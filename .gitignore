@@ -43,3 +43,4 @@ logs/
 /dados/
 /resultados/
 .coverage
+/alvo/
