@@ -77,8 +77,10 @@ def _funcoes_do_alvo(
 
 
 def _modelo_treinado(juliet: Path, sha256: str, analisador: AnalisadorDeCodigo) -> ModeloAprendido:
+    """O modelo do resultado principal: treinado no escopo cwe, o caso real de variante."""
     conferir_hash(juliet, sha256)
-    tarefas = montar_tarefas(list(ler_casos(juliet, analisador)), analisador)
+    configuracao = ConfiguracaoDasTarefas(escopo=Escopo.CWE)
+    tarefas = montar_tarefas(list(ler_casos(juliet, analisador)), analisador, configuracao)
     modelo = ModeloAprendido("modelo_completo", NOMES)
     modelo.treinar(
         [(t.semente, t.candidatos, [r is Rotulo.VARIANTE for r in t.rotulos]) for t in tarefas]
