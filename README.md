@@ -6,6 +6,8 @@ Quando sai uma vulnerabilidade, a correção fecha aquele ponto. A pergunta segu
 segurança de um produto é se a mesma falha existe em outro lugar do código. Foi assim com o PHP: a
 CVE-2024-4577 é a CVE-2012-1823 de volta, por um caminho que a correção de 2012 não cobriu.
 
+![Como o rastro funciona](docs/figuras/fig6-funcionamento.png)
+
 O rastro faz essa busca. Recebe a semente (a função vulnerável e a mesma função corrigida) e uma
 base de código, e devolve duas listas: as funções mais parecidas com a falha e **menos parecidas
 com a correção**, e as que receberam a correção, onde se procura contorno.
@@ -25,6 +27,8 @@ falha que não viu no treino. Escopo `cwe`, 870 sementes em 61 CWEs:
 | Jaccard menos a correção | 0,556 [0,542; 0,571] | 0,832 | 9,0% |
 | Modelo sem as características da correção | 0,454 [0,441; 0,468] | 0,771 | 27,6% |
 | **Modelo completo** | **0,748 [0,733; 0,763]** | **0,896** | **2,6%** |
+
+![Precisão média por método](docs/figuras/fig1-ap-escopo-cwe.png)
 
 No Jaccard, mais de um terço do top 10 é código que já foi corrigido; no modelo completo, 2,6%.
 Tirar do modelo só as características que olham a correção leva esse número a 27,6%, então o ganho

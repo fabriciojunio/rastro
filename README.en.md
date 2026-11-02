@@ -6,6 +6,8 @@ When a vulnerability is fixed, the fix closes that one spot. The next question f
 product's security is whether the same flaw lives somewhere else in the code. PHP is the textbook
 case: CVE-2024-4577 is CVE-2012-1823 coming back, through a path the 2012 fix did not cover.
 
+![How rastro works](docs/figuras/fig6-funcionamento.png)
+
 rastro does that search. Given a seed (the vulnerable function and the same function fixed) and a
 codebase, it returns two lists: the functions most similar to the flaw and **least similar to the
 fix**, and the ones that already received the fix, where a bypass may hide.
@@ -25,6 +27,8 @@ classes it never saw in training. `cwe` scope, 870 seeds across 61 CWEs:
 | Jaccard minus fix | 0.556 [0.542, 0.571] | 0.832 | 9.0% |
 | Model without fix features | 0.454 [0.441, 0.468] | 0.771 | 27.6% |
 | **Full model** | **0.748 [0.733, 0.763]** | **0.896** | **2.6%** |
+
+![Average precision by method](docs/figuras/fig1-ap-escopo-cwe.png)
 
 With Jaccard, over a third of the top 10 is code that was already fixed; with the full model,
 2.6%. Removing only the features that look at the fix brings that back to 27.6%, so the gain comes
