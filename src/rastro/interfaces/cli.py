@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from rastro.aplicacao.caracteristicas import NOMES, analisar_candidato, analisar_semente
+from rastro.aplicacao.contornos import candidatos_a_contorno
 from rastro.aplicacao.pontuadores import (
     CARACTERISTICAS_SEM_CORRECAO,
     CloneExato,
@@ -113,10 +114,19 @@ def comando_variantes(argumentos: argparse.Namespace) -> int:
         }
         for posicao, i in enumerate(ordem[: argumentos.top], start=1)
     ]
+    contornos = [
+        {
+            "arquivo": c.candidato.funcao.caminho,
+            "linha": c.candidato.funcao.linha,
+            "funcao": c.candidato.funcao.nome,
+            "semelhanca_com_o_corrigido": round(c.semelhanca, 4),
+            "correcao_presente": round(c.correcao_presente, 4),
+        }
+        for c in candidatos_a_contorno(analisada, candidatos)[: argumentos.top]
+    ]
     if argumentos.json:
-        print(
-            json.dumps({"pontuador": pontuador.nome, "candidatos": resultado}, ensure_ascii=False)
-        )
+        saida = {"pontuador": pontuador.nome, "candidatos": resultado, "contornos": contornos}
+        print(json.dumps(saida, ensure_ascii=False))
     else:
         print(f"{len(funcoes)} funções analisadas com {pontuador.nome}.")
         for item in resultado:
@@ -124,6 +134,11 @@ def comando_variantes(argumentos: argparse.Namespace) -> int:
                 f"{item['posicao']:>3}. {item['nota']:>7.4f}  "
                 f"{item['arquivo']}:{item['linha']}  {item['funcao']}"
             )
+        if contornos:
+            print()
+            print("Receberam a correção; confira se há contorno:")
+            for item in contornos:
+                print(f"     {item['arquivo']}:{item['linha']}  {item['funcao']}")
     return 0
 
 

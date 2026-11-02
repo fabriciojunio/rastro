@@ -77,6 +77,8 @@ def test_variantes_poe_a_variante_acima_do_ja_corrigido(
     assert saida["pontuador"] == "jaccard_menos_correcao"
     assert nomes[0] == "variante"
     assert nomes.index("variante") < nomes.index("jaCorrigido")
+    # O já corrigido não some: aparece na lista de onde procurar contorno.
+    assert [c["funcao"] for c in saida["contornos"]] == ["jaCorrigido"]
     # Arquivo que não é .java não entra.
     assert all(c["arquivo"].endswith(".java") for c in saida["candidatos"])
 
@@ -87,8 +89,9 @@ def test_variantes_em_texto_e_com_limite(
     assert principal(_args(semente, "--top", "1")) == 0
     linhas = capsys.readouterr().out.strip().splitlines()
     assert linhas[0].startswith("3 funções analisadas")
-    assert len(linhas) == 2
     assert "Servico.java" in linhas[1]
+    assert "Receberam a correção; confira se há contorno:" in linhas
+    assert "jaCorrigido" in linhas[-1]
 
 
 def test_arquivo_grande_demais_e_ignorado(
