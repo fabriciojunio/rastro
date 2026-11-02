@@ -1,0 +1,10 @@
+caracteristica,media,desvio
+falha_presente,"0,4221","0,0437"
+correcao_presente,"0,1917","0,0806"
+contencao_vulneravel,"0,1197","0,0160"
+sim_corrigido,"0,1077","0,0625"
+sim_vulneravel,"0,0954","0,0427"
+sim_chamadas,"0,0491","0,0176"
+log_razao_tamanho,"0,0351","0,0184"
+chamadas_adicionadas_presentes,"-0,0007","0,0115"
+chamadas_removidas_presentes,"-0,0013","0,0082"
