@@ -224,6 +224,34 @@ def test_experimento_grava_o_relatorio(tmp_path: Path, capsys: pytest.CaptureFix
     assert "4 tarefas em 2 CWEs" in capsys.readouterr().out
 
 
+def test_experimento_no_escopo_cwe(tmp_path: Path) -> None:
+    juliet, sha256 = _juliet(tmp_path)
+    saida = tmp_path / "cwe.json"
+    codigo = principal(
+        [
+            "experimento",
+            "--juliet",
+            str(juliet),
+            "--sha256",
+            sha256,
+            "--escopo",
+            "cwe",
+            "--parentes",
+            "50",
+            "--outros",
+            "5",
+            "--dobras",
+            "2",
+            "--saida",
+            str(saida),
+        ]
+    )
+    assert codigo == 0
+    configuracao = json.loads(saida.read_text(encoding="utf-8"))["configuracao"]
+    assert configuracao["escopo"] == "cwe"
+    assert configuracao["tarefas"] == 4
+
+
 def test_experimento_sem_juliet_e_sem_baixar_e_recusado(tmp_path: Path) -> None:
     assert principal(["experimento", "--juliet", str(tmp_path / "nao.zip")]) == 2
 

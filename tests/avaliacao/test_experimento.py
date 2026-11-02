@@ -6,7 +6,9 @@ from rastro.aplicacao.caracteristicas import NOMES
 from rastro.aplicacao.pontuadores import CARACTERISTICAS_SEM_CORRECAO, CloneExato, Jaccard
 from rastro.avaliacao.experimento import (
     METRICAS,
+    ConfiguracaoDasTarefas,
     ConfiguracaoDoModelo,
+    Escopo,
     Tarefa,
     _exemplos_de_treino,
     comparar,
@@ -65,7 +67,9 @@ def _casos() -> list[CasoJuliet]:
 
 @pytest.fixture(scope="module")
 def tarefas() -> list[Tarefa]:
-    return montar_tarefas(_casos(), AnalisadorDeCodigo(), outros_por_tarefa=10)
+    return montar_tarefas(
+        _casos(), AnalisadorDeCodigo(), ConfiguracaoDasTarefas(outros_por_tarefa=10)
+    )
 
 
 def test_correcao_prefere_b2g() -> None:
@@ -117,15 +121,20 @@ def test_outros_vem_de_outras_cwes(tarefas: list[Tarefa]) -> None:
 
 
 def test_montagem_e_deterministica() -> None:
-    a = montar_tarefas(_casos(), AnalisadorDeCodigo(), outros_por_tarefa=10)
-    b = montar_tarefas(_casos(), AnalisadorDeCodigo(), outros_por_tarefa=10)
+    a = montar_tarefas(_casos(), AnalisadorDeCodigo(), ConfiguracaoDasTarefas(outros_por_tarefa=10))
+    b = montar_tarefas(_casos(), AnalisadorDeCodigo(), ConfiguracaoDasTarefas(outros_por_tarefa=10))
     assert [t.grupos_dos_candidatos for t in a] == [t.grupos_dos_candidatos for t in b]
 
 
 def test_familia_sem_correcao_ou_sem_parente_fica_de_fora() -> None:
     casos = [c for c in _casos() if not (c.familia == "CWE1/f1" and c.rotulo is Rotulo.CORRIGIDO)]
     casos = [c for c in casos if not (c.familia == "CWE2/f1" and c.fluxo != 1)]
-    familias = [t.familia for t in montar_tarefas(casos, AnalisadorDeCodigo(), outros_por_tarefa=5)]
+    familias = [
+        t.familia
+        for t in montar_tarefas(
+            casos, AnalisadorDeCodigo(), ConfiguracaoDasTarefas(outros_por_tarefa=5)
+        )
+    ]
     assert "CWE1/f1" not in familias
     assert "CWE2/f1" not in familias
 
@@ -201,3 +210,35 @@ def test_resumo_e_comparacao(tarefas: list[Tarefa]) -> None:
     assert igual["p"] is None
     diferente = comparar(linhas, "jaccard", "clone_exato", "recall@10")
     assert diferente["tarefas"] == len(tarefas)
+
+
+def test_escopo_cwe_usa_outras_familias_e_deixa_a_propria_de_fora() -> None:
+    tarefas = montar_tarefas(
+        _casos(),
+        AnalisadorDeCodigo(),
+        ConfiguracaoDasTarefas(Escopo.CWE, 50, 5),
+    )
+    assert len(tarefas) == 6
+    for tarefa in tarefas:
+        propria = tarefa.familia.split("/")[1]
+        da_cwe = [
+            (c.funcao.caminho, r)
+            for c, r, g in zip(
+                tarefa.candidatos, tarefa.rotulos, tarefa.grupos_dos_candidatos, strict=True
+            )
+            if g == tarefa.grupo
+        ]
+        # Duas famílias por CWE, quatro fluxos, três funções: a outra família inteira.
+        assert len(da_cwe) == 12
+        assert not any(f"__{propria}_" in caminho for caminho, _ in da_cwe)
+        assert sum(r is Rotulo.VARIANTE for _, r in da_cwe) == 4
+
+
+def test_escopo_cwe_respeita_o_limite_de_parentes() -> None:
+    tarefas = montar_tarefas(
+        _casos(),
+        AnalisadorDeCodigo(),
+        ConfiguracaoDasTarefas(Escopo.CWE, 6, 5),
+    )
+    for tarefa in tarefas:
+        assert sum(g == tarefa.grupo for g in tarefa.grupos_dos_candidatos) <= 6

@@ -27,7 +27,9 @@ from rastro.aplicacao.pontuadores import (
     Pontuador,
 )
 from rastro.avaliacao.experimento import (
+    ConfiguracaoDasTarefas,
     ConfiguracaoDoModelo,
+    Escopo,
     comparar,
     montar_tarefas,
     resumir,
@@ -170,7 +172,10 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
     inicio = time.perf_counter()
     analisador = AnalisadorDeCodigo()
     casos = list(ler_casos(juliet, analisador, cwes))
-    tarefas = montar_tarefas(casos, analisador, argumentos.outros, argumentos.semente)
+    configuracao = ConfiguracaoDasTarefas(
+        Escopo(argumentos.escopo), argumentos.parentes, argumentos.outros, argumentos.semente
+    )
+    tarefas = montar_tarefas(casos, analisador, configuracao)
     preparo = time.perf_counter() - inicio
     baselines: list[Pontuador] = [CloneExato(), Jaccard(), JaccardMenosCorrecao()]
     modelos = [
@@ -194,6 +199,8 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
             "metodos_rotulados": len(casos),
             "tarefas": len(tarefas),
             "candidatos_por_tarefa": sorted({len(t.candidatos) for t in tarefas}),
+            "escopo": argumentos.escopo,
+            "parentes_por_tarefa": argumentos.parentes,
             "outros_por_tarefa": argumentos.outros,
             "dobras": argumentos.dobras,
             "semente_aleatoria": argumentos.semente,
@@ -250,6 +257,13 @@ def montar_analisador_de_argumentos() -> argparse.ArgumentParser:
     experimento.add_argument("--baixar", action="store_true", help="baixa do NIST SARD se faltar")
     experimento.add_argument("--sha256", default=SHA256_JULIET_JAVA_1_3)
     experimento.add_argument("--cwes", help="lista separada por vírgula; padrão: todas")
+    experimento.add_argument(
+        "--escopo",
+        choices=[e.value for e in Escopo],
+        default=Escopo.FAMILIA.value,
+        help="familia: variantes de fluxo (quase clones); cwe: outras famílias da mesma CWE",
+    )
+    experimento.add_argument("--parentes", type=int, default=300, help="só no escopo cwe")
     experimento.add_argument("--outros", type=int, default=200)
     experimento.add_argument("--dobras", type=int, default=5)
     experimento.add_argument("--semente", type=int, default=42)

@@ -14,6 +14,7 @@ import statistics
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 from scipy.stats import wilcoxon
@@ -50,6 +51,16 @@ METRICAS: dict[str, Callable[[Sequence[Rotulo]], float]] = {
 _ORDEM_DA_CORRECAO = ("B2G", "G2B", "")
 
 
+class Escopo(StrEnum):
+    FAMILIA = "familia"
+    """Parentes são as outras variantes de fluxo da família: quase clones."""
+    CWE = "cwe"
+    """Parentes são as outras famílias da mesma CWE: a mesma falha em outro código.
+
+    É o caso real de análise de variantes. A própria família fica de fora.
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class Tarefa:
     familia: str
@@ -71,13 +82,23 @@ def escolher_correcao(corrigidos: Sequence[CasoJuliet]) -> CasoJuliet | None:
     return None
 
 
+@dataclass(frozen=True, slots=True)
+class ConfiguracaoDasTarefas:
+    escopo: Escopo = Escopo.FAMILIA
+    parentes_por_tarefa: int = 300
+    """Só no escopo cwe: quantos parentes sortear das outras famílias."""
+    outros_por_tarefa: int = 200
+    semente_aleatoria: int = 42
+
+
 def montar_tarefas(
     casos: Sequence[CasoJuliet],
     analisador: AnalisadorDeTrecho,
-    outros_por_tarefa: int = 200,
-    semente_aleatoria: int = 42,
+    configuracao: ConfiguracaoDasTarefas | None = None,
 ) -> list[Tarefa]:
-    sorteio = random.Random(semente_aleatoria)
+    configuracao = configuracao or ConfiguracaoDasTarefas()
+    escopo = configuracao.escopo
+    sorteio = random.Random(configuracao.semente_aleatoria)
     analisados: dict[tuple[str, int], CandidatoAnalisado] = {}
 
     def analisado(caso: CasoJuliet) -> CandidatoAnalisado:
@@ -87,8 +108,14 @@ def montar_tarefas(
         return analisados[chave]
 
     por_familia: dict[str, list[CasoJuliet]] = defaultdict(list)
+    por_cwe: dict[str, list[CasoJuliet]] = defaultdict(list)
     for caso in casos:
         por_familia[caso.familia].append(caso)
+        por_cwe[caso.cwe].append(caso)
+    externos_por_cwe = {
+        cwe: [c for outra in sorted(por_cwe) if outra != cwe for c in por_cwe[outra]]
+        for cwe in por_cwe
+    }
 
     tarefas = []
     for familia in sorted(por_familia):
@@ -97,14 +124,18 @@ def montar_tarefas(
         correcao = escolher_correcao(
             [c for c in da_familia if c.fluxo == 1 and c.rotulo is Rotulo.CORRIGIDO]
         )
-        parentes = [c for c in da_familia if c.fluxo != 1]
+        cwe = da_familia[0].cwe
+        if escopo is Escopo.FAMILIA:
+            parentes = [c for c in da_familia if c.fluxo != 1]
+        else:
+            da_cwe = [c for c in por_cwe[cwe] if c.familia != familia]
+            parentes = sorteio.sample(da_cwe, min(configuracao.parentes_por_tarefa, len(da_cwe)))
         if not vulneraveis or correcao is None:
             continue
         if not any(c.rotulo is Rotulo.VARIANTE for c in parentes):
             continue
-        cwe = da_familia[0].cwe
-        externos = [c for c in casos if c.cwe != cwe]
-        amostra = sorteio.sample(externos, min(outros_por_tarefa, len(externos)))
+        externos = externos_por_cwe[cwe]
+        amostra = sorteio.sample(externos, min(configuracao.outros_por_tarefa, len(externos)))
         semente = Semente(
             familia, Linguagem.JAVA, vulneraveis[0].funcao.codigo, correcao.funcao.codigo
         )
