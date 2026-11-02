@@ -160,7 +160,8 @@ ferramenta trabalha com Java, PHP e C por meio de um analisador comum.
 
 ## 4 Metodologia
 
-Ver [metodologia.md](metodologia.md), seções 4 a 9.
+Ver [metodologia.md](metodologia.md), seções 4 a 9, e o guia de reprodução em
+[reproducao.md](reproducao.md).
 
 ## 5 Resultados
 
@@ -168,11 +169,54 @@ Ver [resultados.md](resultados.md).
 
 ## 6 Discussão
 
-A seção será escrita com os números finais das análises de sensibilidade e de importância.
+**O ganho vem da correção, e isso foi medido de dois jeitos.** Tirar do modelo as características
+que olham a correção faz o código corrigido no topo subir de 2,6% para 27,6% (ablação), e as duas
+características mais importantes por permutação são justamente `falha_presente` e
+`correcao_presente`. As duas medidas são independentes e apontam para o mesmo lado. A heurística
+sem aprendizado (semelhança com a falha menos semelhança com a correção) já leva o código corrigido
+no topo a 9,0%, então a maior parte do efeito é da ideia, e o modelo acrescenta sobre ela: precisão
+média de 0,556 para 0,748.
+
+**O resultado não depende de ajuste fino.** Com n-gramas de 2, 3 e 4 tokens, o modelo fica entre
+0,748 e 0,775 de precisão média e o Jaccard em torno de 0,41. O valor 3 foi fixado antes e não é o
+melhor dos três. Duas execuções separadas deram os mesmos números.
+
+**A Juliet é fácil num escopo e difícil no outro.** Quando os parentes da semente são as variantes
+de fluxo da mesma família, o Jaccard chega a 0,958 de precisão média: o código é quase o mesmo, com
+outra estrutura de controle em volta. O escopo que representa o problema real é o de outras
+famílias da mesma CWE, e foi nele que a assinatura da correção fez diferença. Reportar só o
+primeiro escopo daria um resultado bonito e sem significado.
+
+**Correção incompleta é o limite.** Nos dois casos reais a segunda falha estava no lugar que tinha
+recebido a primeira correção. Um método que rebaixa o código corrigido rebaixa esse lugar; o MVP,
+que usa a mesma ideia com regras, tem o mesmo limite por construção. A resposta foi separar a
+saída em duas listas, e a segunda, de lugares que receberam a correção, apontou os dois lugares
+certos, com um único item no repositório inteiro do Spring.
+
+**O modelo não transferiu de forma estável.** Treinado na Juliet, ele acertou um dos três lugares
+esperados nos casos reais. Com dois casos não se pode concluir nada geral, mas é um aviso coerente
+com o PrimeVul: ganho em conjunto sintético não é ganho garantido em código real. Por isso a
+ferramenta usa a heurística por padrão e deixa o modelo como opção.
+
+**O ranqueamento se dilui em repositório grande.** No arquivo do Spring, a variante sem correção
+ficou em 3º de 17; no repositório inteiro, acima da posição 1.000, entre 75.712 funções. Para uma
+semente grande e genérica, o ranqueamento ajuda a escolher por onde começar dentro de um módulo, e
+não a apontar uma linha num repositório inteiro.
 
 ## 7 Conclusão
 
-A seção será escrita com os números finais das análises de sensibilidade e de importância.
+O trabalho mostrou que combinar semelhança com a falha e assinatura da correção num modelo aprendido
+ranqueia variantes melhor que clone de código e semelhança simples, em classes de falha que o
+modelo não viu: precisão média de 0,748 contra 0,413 do Jaccard e 0,160 do clone exato, com o
+código já corrigido entre os dez primeiros caindo de 36,4% para 2,6% (RQ1 e RQ2, Juliet Java 1.3,
+p < 10⁻⁶). Mostrou também onde a ideia falha: na correção incompleta, em que a nova falha mora no
+lugar já corrigido. A lista de lugares onde procurar contorno respondeu a esse limite nos dois
+casos reais (RQ3). A ferramenta analisa repositórios com dezenas de milhares de funções em menos
+de meio minuto numa máquina padrão de integração contínua (RQ4).
+
+Como trabalho futuro ficam um conjunto real rotulado com mais casos de correção incompleta, a
+comparação por fatia de programa em vez de função inteira, para alcançar falhas que atravessam
+métodos, e o treino com PHP e C.
 
 ## Referências
 
