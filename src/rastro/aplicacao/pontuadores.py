@@ -21,7 +21,8 @@ from rastro.aplicacao.caracteristicas import (
 
 
 class Pontuador(Protocol):
-    nome: str
+    @property
+    def nome(self) -> str: ...
 
     def pontuar(
         self, semente: SementeAnalisada, candidatos: Sequence[CandidatoAnalisado]

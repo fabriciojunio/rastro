@@ -13,6 +13,7 @@ authors = [{ name = "Fabrício Júnio" }]
 dependencies = [
     "numpy>=2.4,<3",
     "scikit-learn>=1.9,<2",
+    "scipy>=1.17,<2",
     "tree-sitter>=0.25.2,<0.26",
     "tree-sitter-c>=0.24,<0.25",
     "tree-sitter-java>=0.23,<0.24",
@@ -48,7 +49,7 @@ python_version = "3.11"
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*", "tree_sitter_c", "tree_sitter_java", "tree_sitter_php"]
+module = ["scipy.*", "sklearn.*", "tree_sitter_c", "tree_sitter_java", "tree_sitter_php"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -62,3 +63,5 @@ ignore = ["S101", "PLR2004", "RUF001", "RUF002", "RUF003", "N818"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["PLR0913", "S311"]
+# Sorteio de experimento, com semente fixa para ser reprodutível; não é criptografia.
+"src/rastro/avaliacao/**" = ["S311"]
