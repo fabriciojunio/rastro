@@ -23,7 +23,7 @@ correção fechou o ponto, mas não a classe de falha.
 - **RQ3.** O rastro encontra variantes em casos reais de vulnerabilidade?
 - **RQ4.** Quanto custa rodar o rastro na integração contínua?
 
-Este documento cobre RQ1 e RQ2. RQ3 e RQ4 estão em andamento.
+RQ1, RQ2 e RQ3 estão em [resultados.md](resultados.md). RQ4 está em andamento.
 
 ## 3. Trabalhos relacionados
 
@@ -146,6 +146,9 @@ de dados conferido por hash. A CI roda o experimento completo e guarda o JSON po
   diante ficam de fora.
 - **Uma linguagem no treino.** O modelo é treinado em Java. A extração de PHP e C existe, mas o
   conjunto rotulado dessas linguagens ainda não está no experimento.
+- **Transferência.** Nos dois casos reais, o modelo treinado na Juliet não se comportou de forma
+  estável (acertou um lugar e errou dois). Com dois casos não dá para generalizar, mas o ganho
+  medido na Juliet não deve ser lido como o ganho esperado em código real.
 - **Validade interna.** Hiperparâmetros fixos, sem busca; não houve ajuste olhando o teste.
 
 [codeql]: https://codeql.github.com/docs/codeql-overview/about-codeql/
