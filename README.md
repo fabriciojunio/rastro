@@ -38,6 +38,10 @@ segunda lista, e nela os dois lugares aparecem. A variante sem correção do Spr
 transferiu de forma estável para esses casos, e por isso o padrão do `rastro variantes` é a
 heurística.
 
+No repositório inteiro, o rastro analisa as 16.845 funções do `php-src` em 24 segundos e as
+75.712 do `spring-framework` em 22, abaixo de 700 MB de memória, numa máquina padrão do GitHub
+Actions.
+
 Detalhe, intervalos e análise por CWE em [docs/resultados.md](docs/resultados.md); método e
 trabalhos relacionados (VUDDY, MVP, MOVERY, V1SCAN, FIRE, PrimeVul) em
 [docs/metodologia.md](docs/metodologia.md).

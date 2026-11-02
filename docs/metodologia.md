@@ -23,7 +23,7 @@ correção fechou o ponto, mas não a classe de falha.
 - **RQ3.** O rastro encontra variantes em casos reais de vulnerabilidade?
 - **RQ4.** Quanto custa rodar o rastro na integração contínua?
 
-RQ1, RQ2 e RQ3 estão em [resultados.md](resultados.md). RQ4 está em andamento.
+As quatro estão respondidas em [resultados.md](resultados.md).
 
 ## 3. Trabalhos relacionados
 

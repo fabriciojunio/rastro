@@ -37,6 +37,9 @@ list, and both locations show up there. Spring's unfixed variant (`introspectInt
 of 17 in the first list. The model trained on Juliet did not transfer reliably to these cases, so
 the default for `rastro variantes` is the heuristic.
 
+On whole repositories, rastro analyses the 16,845 functions of `php-src` in 24 seconds and the
+75,712 of `spring-framework` in 22, under 700 MB of memory, on a standard GitHub Actions runner.
+
 Details, intervals and per-CWE analysis in [docs/resultados.md](docs/resultados.md); method and
 related work (VUDDY, MVP, MOVERY, V1SCAN, FIRE, PrimeVul) in
 [docs/metodologia.md](docs/metodologia.md). Both are in Portuguese.
