@@ -28,7 +28,9 @@ falha que não viu no treino. Escopo `cwe`, 870 sementes em 61 CWEs:
 
 No Jaccard, mais de um terço do top 10 é código que já foi corrigido; no modelo completo, 2,6%.
 Tirar do modelo só as características que olham a correção leva esse número a 27,6%, então o ganho
-vem da assinatura da correção. Todas as diferenças têm p < 10⁻⁶ no teste de Wilcoxon pareado.
+vem da assinatura da correção, e as duas características mais importantes por permutação são as
+dela. Todas as diferenças têm p < 10⁻⁶ no teste de Wilcoxon pareado, e o resultado se mantém com
+n-gramas de 2 e 4 tokens (AP 0,775 e 0,765).
 
 Nos dois casos reais, PHP (CVE-2012-1823 e CVE-2024-4577) e Spring (CVE-2010-1622 e Spring4Shell),
 o mesmo critério mostra o seu limite: a segunda falha está no lugar que já recebeu a primeira

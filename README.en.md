@@ -28,7 +28,9 @@ classes it never saw in training. `cwe` scope, 870 seeds across 61 CWEs:
 
 With Jaccard, over a third of the top 10 is code that was already fixed; with the full model,
 2.6%. Removing only the features that look at the fix brings that back to 27.6%, so the gain comes
-from the fix signature. Every difference has p < 10⁻⁶ in a paired Wilcoxon test.
+from the fix signature, and the two most important features by permutation are its own. Every
+difference has p < 10⁻⁶ in a paired Wilcoxon test, and the result holds with 2- and 4-token
+n-grams (AP 0.775 and 0.765).
 
 In both real cases, PHP (CVE-2012-1823 and CVE-2024-4577) and Spring (CVE-2010-1622 and
 Spring4Shell), the same idea shows its limit: the second flaw sits where the first fix was
