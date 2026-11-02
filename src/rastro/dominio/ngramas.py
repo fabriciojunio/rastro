@@ -5,10 +5,11 @@ perder a ordem por completo: dois trechos com as mesmas chamadas na mesma
 sequência dividem os n-gramas, mesmo com variáveis de nomes diferentes.
 """
 
-from collections.abc import Sequence
-from typing import TypeAlias
+from collections.abc import Hashable, Sequence
+from typing import TypeAlias, TypeVar
 
 Ngrama: TypeAlias = tuple[str, ...]
+_T = TypeVar("_T", bound=Hashable)
 
 
 def ngramas(tokens: Sequence[str], n: int) -> frozenset[Ngrama]:
@@ -22,7 +23,7 @@ def ngramas(tokens: Sequence[str], n: int) -> frozenset[Ngrama]:
     return frozenset(tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1))
 
 
-def jaccard(a: frozenset[Ngrama], b: frozenset[Ngrama]) -> float:
+def jaccard(a: frozenset[_T], b: frozenset[_T]) -> float:
     """Tamanho da interseção sobre o da união. Dois vazios contam como zero."""
     uniao = a | b
     if not uniao:
@@ -30,7 +31,7 @@ def jaccard(a: frozenset[Ngrama], b: frozenset[Ngrama]) -> float:
     return len(a & b) / len(uniao)
 
 
-def cobertura(procurados: frozenset[Ngrama], presentes: frozenset[Ngrama]) -> float:
+def cobertura(procurados: frozenset[_T], presentes: frozenset[_T]) -> float:
     """Fração dos procurados que aparece em presentes. Nada procurado conta zero."""
     if not procurados:
         return 0.0
