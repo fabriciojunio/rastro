@@ -39,7 +39,10 @@ jobs:
       - name: Rodar o experimento
         env:
           PYTHONPATH: src
+        # pipefail: sem ele o tee devolve sucesso mesmo com o experimento falhando,
+        # e foi o que aconteceu na primeira execução.
         run: |
+          set -o pipefail
           python -m rastro experimento --baixar --escopo "${{ matrix.escopo }}" \
             --saida "resultados/juliet-${{ matrix.escopo }}.json" | tee "resultados-${{ matrix.escopo }}.txt"
 
@@ -59,4 +62,4 @@ jobs:
           name: experimento-${{ matrix.escopo }}
           path: resultados/
           retention-days: 90
-          if-no-files-found: warn
+          if-no-files-found: error
