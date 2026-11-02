@@ -113,6 +113,20 @@ def test_arquivo_que_falta_e_baixado(
     assert pedidos == [caso.alvo.url]
 
 
+def test_comando_caso_com_o_modelo_treinado(
+    caso: CasoReal,
+    tmp_path: Path,
+    juliet: tuple[Path, str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    zip_juliet, sha256 = juliet
+    monkeypatch.setitem(CASOS, "teste", caso)
+    args = ["caso", "teste", "--dados", str(tmp_path), "--json"]
+    assert principal([*args, "--treinar-com", str(zip_juliet), "--sha256", sha256]) == 0
+    assert "modelo_completo" in json.loads(capsys.readouterr().out)["posicao"]
+
+
 def test_comando_caso(
     caso: CasoReal,
     tmp_path: Path,

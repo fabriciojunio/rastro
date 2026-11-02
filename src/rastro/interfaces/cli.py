@@ -206,8 +206,13 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
 
 def comando_caso(argumentos: argparse.Namespace) -> int:
     caso = CASOS[argumentos.nome]
-    baselines: list[Pontuador] = [CloneExato(), Jaccard(), JaccardMenosCorrecao()]
-    resultado = avaliar_caso(caso, Path(argumentos.dados), AnalisadorDeCodigo(), baselines)
+    analisador = AnalisadorDeCodigo()
+    pontuadores: list[Pontuador] = [CloneExato(), Jaccard(), JaccardMenosCorrecao()]
+    if argumentos.treinar_com:
+        pontuadores.append(
+            _modelo_treinado(Path(argumentos.treinar_com), argumentos.sha256, analisador)
+        )
+    resultado = avaliar_caso(caso, Path(argumentos.dados), analisador, pontuadores)
     if argumentos.json:
         print(json.dumps(resultado, ensure_ascii=False))
         return 0
@@ -274,6 +279,10 @@ def montar_analisador_de_argumentos() -> argparse.ArgumentParser:
     caso.add_argument("nome", choices=sorted(CASOS))
     caso.add_argument("--dados", default="dados/casos")
     caso.add_argument("--json", action="store_true")
+    caso.add_argument(
+        "--treinar-com", help="zip da Juliet Java 1.3 para incluir o modelo treinado nela"
+    )
+    caso.add_argument("--sha256", default=SHA256_JULIET_JAVA_1_3)
     caso.set_defaults(funcao=comando_caso)
     return raiz
 
