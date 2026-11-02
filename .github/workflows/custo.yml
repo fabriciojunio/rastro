@@ -36,6 +36,8 @@ jobs:
             funcao: main
             vulneravel: php_php-src_f5936cceeb26_cgi_main.c
             corrigido: php_php-src_0556103f6a34_cgi_main.c
+            contorno: sapi/cgi/cgi_main.c|main
+            variante: ""
           - nome: spring-framework
             caso: spring
             repositorio: https://github.com/spring-projects/spring-framework
@@ -44,6 +46,8 @@ jobs:
             funcao: CachedIntrospectionResults
             vulneravel: spring-projects_spring-framework_dea5918d66aa_CachedIntrospectionResults.java
             corrigido: spring-projects_spring-framework_3a5af35d37c7_CachedIntrospectionResults.java
+            contorno: spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java|CachedIntrospectionResults
+            variante: spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java|introspectInterfaces
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -77,33 +81,25 @@ jobs:
             --id "${{ matrix.caso }}" --linguagem "${{ matrix.linguagem }}" \
             --vulneravel "dados/casos/${{ matrix.vulneravel }}" \
             --corrigido "dados/casos/${{ matrix.corrigido }}" \
-            --funcao "${{ matrix.funcao }}" --alvo alvo --top 20 --json > saida.json
+            --funcao "${{ matrix.funcao }}" --alvo alvo --top 1000 --json > saida.json
           grep -E "Elapsed|Maximum resident" tempo.txt
 
-      - name: Conferir o que precisa ser achado
+      # Cobra o que o rastro garante (o lugar do contorno na lista de contornos)
+      # e mede, sem reprovar, a posição da variante no repositório inteiro.
+      - name: Conferir o contorno e medir a variante
+        env:
+          PYTHONPATH: src
         run: |
-          python - <<'EOF'
-          import json, sys
-          saida = json.load(open("saida.json", encoding="utf-8"))
-          topo = [(c["arquivo"].replace("\\", "/"), c["funcao"]) for c in saida["candidatos"]]
-          contornos = [(c["arquivo"].replace("\\", "/"), c["funcao"]) for c in saida["contornos"]]
-          caso = "${{ matrix.caso }}"
-          if caso == "php":
-              esperado = ("sapi/cgi/cgi_main.c", "main")
-              achou = esperado in contornos
-          else:
-              esperado = ("spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java", "introspectInterfaces")
-              achou = esperado in topo
-          print(f"{saida['funcoes_analisadas']} funções; esperado {esperado}: {'achado' if achou else 'NÃO achado'}")
-          sys.exit(0 if achou else 1)
-          EOF
+          variante=()
+          if [ -n "${{ matrix.variante }}" ]; then variante=(--variante "${{ matrix.variante }}"); fi
+          python -m rastro.avaliacao.regressao saida.json --contorno "${{ matrix.contorno }}" "${variante[@]}"
 
       - name: Resumo na página da execução
         if: always()
         run: |
           {
             echo "## ${{ matrix.nome }} no commit ${{ matrix.commit }}"
-            python -c "import json; print('Funções analisadas:', json.load(open('saida.json'))['funcoes_analisadas'])" || true
+            cat medida.txt || true
             grep -E "Elapsed|Maximum resident" tempo.txt || true
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -114,4 +110,5 @@ jobs:
           path: |
             saida.json
             tempo.txt
+            medida.txt
           retention-days: 90
