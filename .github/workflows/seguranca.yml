@@ -49,7 +49,7 @@ jobs:
       - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
         with:
           scan-args: |-
-            -L requisitos/dev.txt
+            -L requirements.txt:requisitos/dev.txt
 
   sast:
     name: Análise estática (Semgrep)
