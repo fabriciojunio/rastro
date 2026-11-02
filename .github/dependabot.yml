@@ -9,6 +9,10 @@ updates:
       default-days: 7
     commit-message:
       prefix: "build(deps)"
+    # A 0.26 derruba o processo em análises seguidas (docs/adr/0004-tree-sitter-0-25.md).
+    ignore:
+      - dependency-name: "tree-sitter"
+        versions: [">=0.26"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
