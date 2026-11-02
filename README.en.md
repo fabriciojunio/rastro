@@ -30,9 +30,12 @@ With Jaccard, over a third of the top 10 is code that was already fixed; with th
 2.6%. Removing only the features that look at the fix brings that back to 27.6%, so the gain comes
 from the fix signature. Every difference has p < 10⁻⁶ in a paired Wilcoxon test.
 
-The real PHP case shows the limit of the same idea: CVE-2024-4577 sits in the function that had
-already received the 2012 fix, and a scorer that demotes fixed code ranks it last. That is why
-rastro returns the second list, and the function shows up there.
+In both real cases, PHP (CVE-2012-1823 and CVE-2024-4577) and Spring (CVE-2010-1622 and
+Spring4Shell), the same idea shows its limit: the second flaw sits where the first fix was
+applied, and a scorer that demotes fixed code ranks it last. That is why rastro returns the second
+list, and both locations show up there. Spring's unfixed variant (`introspectInterfaces`) ranks 3rd
+of 17 in the first list. The model trained on Juliet did not transfer reliably to these cases, so
+the default for `rastro variantes` is the heuristic.
 
 Details, intervals and per-CWE analysis in [docs/resultados.md](docs/resultados.md); method and
 related work (VUDDY, MVP, MOVERY, V1SCAN, FIRE, PrimeVul) in
@@ -66,6 +69,7 @@ Reproduce the results:
 ```bash
 rastro experimento --baixar --escopo cwe --saida resultados/juliet-cwe.json
 rastro caso php
+rastro caso spring --treinar-com dados/juliet-java-1.3.zip
 ```
 
 `--baixar` fetches Juliet from NIST SARD over HTTPS and only uses it after checking the SHA-256
@@ -91,6 +95,7 @@ and Semgrep, and the full experiment on pull requests to production.
   used.
 - The model is trained on Java. PHP and C are parsed but have no labelled set in the experiment yet.
 - Incomplete fixes: ranking demotes the bypass location, which only appears in the bypass list.
+- The model's gain on Juliet did not transfer reliably to the two real cases.
 
 ## Use of AI
 

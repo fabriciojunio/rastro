@@ -30,9 +30,13 @@ No Jaccard, mais de um terço do top 10 é código que já foi corrigido; no mod
 Tirar do modelo só as características que olham a correção leva esse número a 27,6%, então o ganho
 vem da assinatura da correção. Todas as diferenças têm p < 10⁻⁶ no teste de Wilcoxon pareado.
 
-No caso real do PHP, o mesmo critério mostra o seu limite: a CVE-2024-4577 está na função que já
-recebeu a correção de 2012, e quem rebaixa o código corrigido a põe em último. É por isso que o
-rastro devolve a segunda lista, e nela a função aparece.
+Nos dois casos reais, PHP (CVE-2012-1823 e CVE-2024-4577) e Spring (CVE-2010-1622 e Spring4Shell),
+o mesmo critério mostra o seu limite: a segunda falha está no lugar que já recebeu a primeira
+correção, e quem rebaixa o código corrigido o põe em último. É por isso que o rastro devolve a
+segunda lista, e nela os dois lugares aparecem. A variante sem correção do Spring
+(`introspectInterfaces`) fica em 3º de 17 na primeira lista. O modelo treinado na Juliet não se
+transferiu de forma estável para esses casos, e por isso o padrão do `rastro variantes` é a
+heurística.
 
 Detalhe, intervalos e análise por CWE em [docs/resultados.md](docs/resultados.md); método e
 trabalhos relacionados (VUDDY, MVP, MOVERY, V1SCAN, FIRE, PrimeVul) em
@@ -66,6 +70,7 @@ Reproduzir os resultados:
 ```bash
 rastro experimento --baixar --escopo cwe --saida resultados/juliet-cwe.json
 rastro caso php
+rastro caso spring --treinar-com dados/juliet-java-1.3.zip
 ```
 
 O `--baixar` busca a Juliet no NIST SARD por HTTPS e só usa o arquivo depois de conferir o SHA-256
@@ -105,6 +110,7 @@ As decisões estão em [docs/adr/](docs/adr/).
 - O modelo é treinado em Java. PHP e C são analisados, mas sem conjunto rotulado no experimento.
 - Correção incompleta: o ranqueamento rebaixa o lugar do contorno, e ele só aparece na lista de
   contornos.
+- O ganho do modelo na Juliet não se transferiu de forma estável para os dois casos reais.
 
 ## Uso de IA
 
