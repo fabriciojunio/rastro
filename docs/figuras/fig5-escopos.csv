@@ -1,0 +1,11 @@
+escopo,metodo,ap
+Escopo família,Clone exato,"0,078"
+Escopo família,Jaccard,"0,958"
+Escopo família,Jaccard menos a correção,"0,830"
+Escopo família,Modelo sem a correção,"0,935"
+Escopo família,Modelo completo,"0,997"
+Escopo cwe,Clone exato,"0,160"
+Escopo cwe,Jaccard,"0,413"
+Escopo cwe,Jaccard menos a correção,"0,556"
+Escopo cwe,Modelo sem a correção,"0,454"
+Escopo cwe,Modelo completo,"0,748"

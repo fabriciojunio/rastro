@@ -58,8 +58,9 @@ CASOS: dict[str, CasoReal] = {
     "php": CasoReal(
         identificador="CVE-2012-1823 -> CVE-2024-4577",
         descricao=(
-            "A correção de 2012 bloqueou opções do php-cgi vindas da query string; em 2024 o "
-            "hífen suave convertido pelo Best-Fit do Windows contornou a mesma checagem."
+            "A correção de 2012 fez o php-cgi deixar de interpretar opções vindas da query "
+            "string; em 2024 o hífen suave, convertido em hífen pelo Best-Fit do Windows nos "
+            "argumentos, contornou a mesma checagem."
         ),
         linguagem=Linguagem.C,
         funcao_da_semente="main",

@@ -1,0 +1,6 @@
+metodo,ap,ic95_baixo,ic95_alto
+Clone exato,"0,160","0,156","0,164"
+Jaccard,"0,413","0,400","0,428"
+Jaccard menos a correção,"0,556","0,542","0,571"
+Modelo sem a correção,"0,454","0,441","0,468"
+Modelo completo,"0,748","0,733","0,763"
