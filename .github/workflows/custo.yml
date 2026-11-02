@@ -19,6 +19,11 @@ on:
 permissions:
   contents: read
 
+# Um envio novo no PR cancela a rodada anterior, que já mede código superado.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   custo:
     name: ${{ matrix.nome }}
