@@ -20,6 +20,7 @@ from typing import Any
 from scipy.stats import wilcoxon
 
 from rastro.aplicacao.caracteristicas import (
+    TAMANHO_DO_NGRAMA,
     CandidatoAnalisado,
     SementeAnalisada,
     analisar_candidato,
@@ -89,6 +90,7 @@ class ConfiguracaoDasTarefas:
     """Só no escopo cwe: quantos parentes sortear das outras famílias."""
     outros_por_tarefa: int = 200
     semente_aleatoria: int = 42
+    tamanho_do_ngrama: int = TAMANHO_DO_NGRAMA
 
 
 def montar_tarefas(
@@ -104,7 +106,9 @@ def montar_tarefas(
     def analisado(caso: CasoJuliet) -> CandidatoAnalisado:
         chave = (caso.funcao.caminho, caso.funcao.linha)
         if chave not in analisados:
-            analisados[chave] = analisar_candidato(caso.funcao, analisador)
+            analisados[chave] = analisar_candidato(
+                caso.funcao, analisador, configuracao.tamanho_do_ngrama
+            )
         return analisados[chave]
 
     por_familia: dict[str, list[CasoJuliet]] = defaultdict(list)
@@ -144,7 +148,7 @@ def montar_tarefas(
             Tarefa(
                 familia=familia,
                 grupo=cwe,
-                semente=analisar_semente(semente, analisador),
+                semente=analisar_semente(semente, analisador, configuracao.tamanho_do_ngrama),
                 candidatos=tuple(analisado(c) for c in selecionados),
                 rotulos=tuple(c.rotulo for c in parentes) + (Rotulo.OUTRO,) * len(amostra),
                 grupos_dos_candidatos=tuple(c.cwe for c in selecionados),

@@ -249,6 +249,16 @@ def test_escopo_cwe_usa_outras_familias_e_deixa_a_propria_de_fora() -> None:
         assert sum(r is Rotulo.VARIANTE for _, r in da_cwe) == 4
 
 
+def test_tamanho_do_ngrama_chega_aos_candidatos() -> None:
+    tarefas = montar_tarefas(
+        _casos(),
+        AnalisadorDeCodigo(),
+        ConfiguracaoDasTarefas(outros_por_tarefa=5, tamanho_do_ngrama=2),
+    )
+    assert all(len(n) == 2 for n in tarefas[0].candidatos[0].ngramas)
+    assert all(len(n) == 2 for n in tarefas[0].semente.ngramas_vulneravel)
+
+
 def test_escopo_cwe_respeita_o_limite_de_parentes() -> None:
     tarefas = montar_tarefas(
         _casos(),

@@ -177,7 +177,11 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
     analisador = AnalisadorDeCodigo()
     casos = list(ler_casos(juliet, analisador, cwes))
     configuracao = ConfiguracaoDasTarefas(
-        Escopo(argumentos.escopo), argumentos.parentes, argumentos.outros, argumentos.semente
+        Escopo(argumentos.escopo),
+        argumentos.parentes,
+        argumentos.outros,
+        argumentos.semente,
+        argumentos.ngrama,
     )
     tarefas = montar_tarefas(casos, analisador, configuracao)
     preparo = time.perf_counter() - inicio
@@ -215,6 +219,7 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
             "candidatos_por_tarefa": sorted({len(t.candidatos) for t in tarefas}),
             "escopo": argumentos.escopo,
             "parentes_por_tarefa": argumentos.parentes,
+            "tamanho_do_ngrama": argumentos.ngrama,
             "outros_por_tarefa": argumentos.outros,
             "dobras": argumentos.dobras,
             "semente_aleatoria": argumentos.semente,
@@ -309,6 +314,9 @@ def montar_analisador_de_argumentos() -> argparse.ArgumentParser:
     experimento.add_argument("--outros", type=int, default=200)
     experimento.add_argument("--dobras", type=int, default=5)
     experimento.add_argument("--semente", type=int, default=42)
+    experimento.add_argument(
+        "--ngrama", type=int, default=3, help="tamanho do n-grama de tokens (padrão 3)"
+    )
     experimento.add_argument("--saida", default="resultados/experimento.json")
     experimento.set_defaults(funcao=comando_experimento)
 
