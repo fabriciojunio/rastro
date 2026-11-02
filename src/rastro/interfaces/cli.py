@@ -141,7 +141,12 @@ def comando_variantes(argumentos: argparse.Namespace) -> int:
         for c in candidatos_a_contorno(analisada, candidatos)[: argumentos.top]
     ]
     if argumentos.json:
-        saida = {"pontuador": pontuador.nome, "candidatos": resultado, "contornos": contornos}
+        saida = {
+            "pontuador": pontuador.nome,
+            "funcoes_analisadas": len(funcoes),
+            "candidatos": resultado,
+            "contornos": contornos,
+        }
         print(json.dumps(saida, ensure_ascii=False))
     else:
         print(f"{len(funcoes)} funções analisadas com {pontuador.nome}.")

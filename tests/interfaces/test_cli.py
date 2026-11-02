@@ -74,6 +74,7 @@ def test_variantes_poe_a_variante_acima_do_ja_corrigido(
     saida = json.loads(capsys.readouterr().out)
     nomes = [c["funcao"] for c in saida["candidatos"]]
     assert saida["pontuador"] == "jaccard_menos_correcao"
+    assert saida["funcoes_analisadas"] == 3
     assert nomes[0] == "variante"
     assert nomes.index("variante") < nomes.index("jaCorrigido")
     # O já corrigido não some: aparece na lista de onde procurar contorno.
