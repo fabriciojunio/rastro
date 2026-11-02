@@ -8,6 +8,7 @@ parecidas com a falha e menos parecidas com a correção.
 """
 
 import argparse
+import io
 import json
 import sys
 import time
@@ -25,6 +26,7 @@ from rastro.aplicacao.pontuadores import (
     ModeloAprendido,
     Pontuador,
 )
+from rastro.avaliacao.casos import CASOS, avaliar_caso
 from rastro.avaliacao.experimento import (
     ConfiguracaoDasTarefas,
     ConfiguracaoDoModelo,
@@ -202,6 +204,22 @@ def comando_experimento(argumentos: argparse.Namespace) -> int:
     return 0
 
 
+def comando_caso(argumentos: argparse.Namespace) -> int:
+    caso = CASOS[argumentos.nome]
+    baselines: list[Pontuador] = [CloneExato(), Jaccard(), JaccardMenosCorrecao()]
+    resultado = avaliar_caso(caso, Path(argumentos.dados), AnalisadorDeCodigo(), baselines)
+    if argumentos.json:
+        print(json.dumps(resultado, ensure_ascii=False))
+        return 0
+    print(f"{resultado['caso']}: {resultado['descricao']}")
+    total = resultado["funcoes_no_alvo"]
+    for nome, posicao in resultado["posicao"].items():
+        print(f"  {nome:<24} {resultado['funcao_esperada']} na posição {posicao} de {total}")
+    marca = "sim" if resultado["na_lista_de_contornos"] else "não"
+    print(f"  na lista de onde procurar contorno: {marca}")
+    return 0
+
+
 def _imprimir_resumo(relatorio: dict[str, Any]) -> None:
     config = relatorio["configuracao"]
     print(f"{config['tarefas']} tarefas em {len(config['cwes'])} CWEs")
@@ -250,10 +268,21 @@ def montar_analisador_de_argumentos() -> argparse.ArgumentParser:
     experimento.add_argument("--semente", type=int, default=42)
     experimento.add_argument("--saida", default="resultados/experimento.json")
     experimento.set_defaults(funcao=comando_experimento)
+
+    caso = sub.add_parser("caso", help="roda um caso real de vulnerabilidade recorrente")
+    caso.add_argument("nome", choices=sorted(CASOS))
+    caso.add_argument("--dados", default="dados/casos")
+    caso.add_argument("--json", action="store_true")
+    caso.set_defaults(funcao=comando_caso)
     return raiz
 
 
 def principal(argv: Sequence[str] | None = None) -> int:
+    # No Windows, com a saída redirecionada, o Python usaria a página de código do
+    # sistema e os acentos sairiam trocados.
+    for fluxo in (sys.stdout, sys.stderr):
+        if isinstance(fluxo, io.TextIOWrapper):
+            fluxo.reconfigure(encoding="utf-8")
     argumentos = montar_analisador_de_argumentos().parse_args(argv)
     if getattr(argumentos, "top", 1) < 1:
         print("erro: --top precisa ser pelo menos 1", file=sys.stderr)
