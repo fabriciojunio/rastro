@@ -8,11 +8,9 @@ parecidas com a falha e menos parecidas com a correção.
 """
 
 import argparse
-import hashlib
 import json
 import sys
 import time
-import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -38,6 +36,7 @@ from rastro.avaliacao.experimento import (
 from rastro.avaliacao.metricas import Rotulo
 from rastro.dominio.modelos import Funcao, Linguagem, Semente, SementeInvalida
 from rastro.infraestrutura.arvore import AnalisadorDeCodigo
+from rastro.infraestrutura.download import ErroDeUso, baixar, conferir_hash
 from rastro.infraestrutura.juliet import SHA256_JULIET_JAVA_1_3, URL_JULIET_JAVA_1_3, ler_casos
 
 EXTENSOES = {
@@ -47,43 +46,6 @@ EXTENSOES = {
 }
 # Arquivo maior que isso é gerado ou minificado, e só atrasaria a análise.
 TAMANHO_MAXIMO_DE_ARQUIVO = 2 * 1024 * 1024
-_BLOCO = 1024 * 1024
-# O NIST SARD responde 403 ao agente padrão do Python. Um agente que diz quem
-# está baixando é aceito, e é o educado de qualquer forma.
-AGENTE = "rastro/0.1 (+https://github.com/fabriciojunio/rastro)"
-
-
-class ErroDeUso(Exception):
-    """Entrada inválida: a mensagem é para quem rodou o comando."""
-
-
-def conferir_hash(arquivo: Path, esperado: str) -> None:
-    resumo = hashlib.sha256()
-    with arquivo.open("rb") as entrada:
-        while bloco := entrada.read(_BLOCO):
-            resumo.update(bloco)
-    if resumo.hexdigest() != esperado:
-        raise ErroDeUso(
-            f"o SHA-256 de {arquivo} não confere: esperado {esperado}, obtido {resumo.hexdigest()}"
-        )
-
-
-def baixar(url: str, destino: Path, sha256: str) -> None:
-    """Baixa para um arquivo temporário e só renomeia depois de conferir o hash."""
-    if not url.startswith("https://"):
-        raise ErroDeUso("o download só é feito por HTTPS")
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    parcial = destino.with_suffix(destino.suffix + ".parcial")
-    pedido = urllib.request.Request(url, headers={"User-Agent": AGENTE})  # noqa: S310
-    with urllib.request.urlopen(pedido, timeout=120) as resposta, parcial.open("wb") as saida:  # noqa: S310
-        while bloco := resposta.read(_BLOCO):
-            saida.write(bloco)
-    try:
-        conferir_hash(parcial, sha256)
-    except ErroDeUso:
-        parcial.unlink()
-        raise
-    parcial.replace(destino)
 
 
 def _ler(caminho: Path) -> str:

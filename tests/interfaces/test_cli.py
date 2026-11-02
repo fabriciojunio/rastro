@@ -9,8 +9,10 @@ from typing import Any
 
 import pytest
 
+from rastro.infraestrutura import download
+from rastro.infraestrutura.download import ErroDeUso, baixar, conferir_hash
 from rastro.interfaces import cli
-from rastro.interfaces.cli import ErroDeUso, baixar, conferir_hash, principal
+from rastro.interfaces.cli import principal
 
 VULNERAVEL = """void bad(String nome) {
     Statement s = conexao.createStatement();
@@ -145,7 +147,7 @@ def test_download_so_fica_com_hash_certo(tmp_path: Path, monkeypatch: pytest.Mon
     baixar("https://exemplo.org/j.zip", destino, hashlib.sha256(b"dados").hexdigest())
     assert destino.read_bytes() == b"dados"
     # O SARD recusa o agente padrão do Python com 403.
-    assert pedidos[0].get_header("User-agent") == cli.AGENTE
+    assert pedidos[0].get_header("User-agent") == download.AGENTE
 
     outro = tmp_path / "x.zip"
     with pytest.raises(ErroDeUso):
