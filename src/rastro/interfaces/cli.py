@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from rastro import __version__
 from rastro.aplicacao.caracteristicas import NOMES, analisar_candidato, analisar_semente
 from rastro.aplicacao.contornos import candidatos_a_contorno
 from rastro.aplicacao.pontuadores import (
@@ -274,6 +275,7 @@ def _imprimir_resumo(relatorio: dict[str, Any]) -> None:
 
 def montar_analisador_de_argumentos() -> argparse.ArgumentParser:
     raiz = argparse.ArgumentParser(prog="rastro", description=__doc__)
+    raiz.add_argument("--version", action="version", version=f"rastro {__version__}")
     sub = raiz.add_subparsers(dest="comando", required=True)
 
     variantes = sub.add_parser("variantes", help="procura variantes de uma falha conhecida")
