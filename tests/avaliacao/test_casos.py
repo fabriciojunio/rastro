@@ -45,8 +45,16 @@ def caso(tmp_path: Path) -> CasoReal:
         vulneravel=_arquivo(tmp_path, "a" * 40, ANTES),
         corrigido=_arquivo(tmp_path, "b" * 40, DEPOIS),
         alvo=_arquivo(tmp_path, "c" * 40, ALVO),
-        funcao_esperada="main",
+        funcoes_esperadas=("main",),
     )
+
+
+def test_os_casos_reais_apontam_para_commits_completos() -> None:
+    for caso in CASOS.values():
+        for arquivo in (caso.vulneravel, caso.corrigido, caso.alvo):
+            assert len(arquivo.commit) == 40
+            assert len(arquivo.sha256) == 64
+            assert arquivo.url.startswith("https://raw.githubusercontent.com/")
 
 
 def test_url_e_nome_local_vem_do_commit() -> None:
@@ -65,11 +73,11 @@ def test_caso_mostra_a_posicao_e_o_contorno(caso: CasoReal, tmp_path: Path) -> N
     assert resultado["funcoes_no_alvo"] == 3
     # O main recebeu a correção. O Jaccard o põe logo atrás de "outra", que é a
     # variante sem correção; quem rebaixa a correção o põe no fim.
-    assert resultado["posicao"]["jaccard"] == 2
-    assert resultado["posicao"]["jaccard_menos_correcao"] == 3
+    assert resultado["posicao"]["jaccard"] == {"main": 2}
+    assert resultado["posicao"]["jaccard_menos_correcao"] == {"main": 3}
     # Empate conta contra: no clone exato todos empatam em zero.
-    assert resultado["posicao"]["clone_exato"] == 3
-    assert resultado["na_lista_de_contornos"] is True
+    assert resultado["posicao"]["clone_exato"] == {"main": 3}
+    assert resultado["na_lista_de_contornos"] == {"main": True}
     assert resultado["contornos"] == ["main"]
 
 
@@ -82,7 +90,10 @@ def test_arquivo_alterado_e_recusado(caso: CasoReal, tmp_path: Path) -> None:
 def test_funcao_que_nao_existe_e_avisada(caso: CasoReal, tmp_path: Path) -> None:
     with pytest.raises(ErroDeUso, match="nao_existe"):
         avaliar_caso(
-            replace(caso, funcao_esperada="nao_existe"), tmp_path, AnalisadorDeCodigo(), [Jaccard()]
+            replace(caso, funcoes_esperadas=("nao_existe",)),
+            tmp_path,
+            AnalisadorDeCodigo(),
+            [Jaccard()],
         )
 
 
@@ -110,8 +121,8 @@ def test_comando_caso(
 ) -> None:
     monkeypatch.setitem(CASOS, "teste", caso)
     assert principal(["caso", "teste", "--dados", str(tmp_path), "--json"]) == 0
-    assert json.loads(capsys.readouterr().out)["posicao"]["jaccard"] == 2
+    assert json.loads(capsys.readouterr().out)["posicao"]["jaccard"] == {"main": 2}
     assert principal(["caso", "teste", "--dados", str(tmp_path)]) == 0
     texto = capsys.readouterr().out
     assert "main na posição 2 de 3" in texto
-    assert "contorno: sim" in texto
+    assert "main na lista de onde procurar contorno: sim" in texto

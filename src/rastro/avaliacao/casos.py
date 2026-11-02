@@ -43,12 +43,16 @@ class CasoReal:
     vulneravel: ArquivoNoCommit
     corrigido: ArquivoNoCommit
     alvo: ArquivoNoCommit
-    funcao_esperada: str
+    funcoes_esperadas: tuple[str, ...]
     """Onde a correção seguinte foi feita: é o que se espera achar."""
 
 
 _PHP = "php/php-src"
 _CGI = "sapi/cgi/cgi_main.c"
+_SPRING = "spring-projects/spring-framework"
+_BEANS = "src/main/java/org/springframework/beans/CachedIntrospectionResults.java"
+_CIR_2010 = f"org.springframework.beans/{_BEANS}"
+_CIR_2022 = f"spring-beans/{_BEANS}"
 
 CASOS: dict[str, CasoReal] = {
     "php": CasoReal(
@@ -77,7 +81,36 @@ CASOS: dict[str, CasoReal] = {
             _CGI,
             "d8af6a45bedefe2edd0f9eec298950466dc62964942c0d853c749acc681efc0b",
         ),
-        funcao_esperada="main",
+        funcoes_esperadas=("main",),
+    ),
+    "spring": CasoReal(
+        identificador="CVE-2010-1622 -> CVE-2022-22965",
+        descricao=(
+            "A correção de 2010 impediu o data binding de chegar ao classLoader de Class; em 2022 "
+            "o Spring4Shell chegou a ele por outro caminho, e a correção foi feita no mesmo "
+            "construtor e em introspectInterfaces, que não tinha filtro nenhum."
+        ),
+        linguagem=Linguagem.JAVA,
+        funcao_da_semente="CachedIntrospectionResults",
+        vulneravel=ArquivoNoCommit(
+            _SPRING,
+            "dea5918d66aa25ea9ad9f44598cea3f765e21f75",
+            _CIR_2010,
+            "6dab8b9cc76487caa14574e8df15408758f3f9bbb85d840334099d0637779cc7",
+        ),
+        corrigido=ArquivoNoCommit(
+            _SPRING,
+            "3a5af35d37c79d0644d49b93f792a4c18fe8eb71",
+            _CIR_2010,
+            "4b4b6a822436850e932751ded7e82186e71c2a167d4725597e655eb8ad1ee9f3",
+        ),
+        alvo=ArquivoNoCommit(
+            _SPRING,
+            "1627f57f1f77abe17dd607c75476b9e4cb22ffbb",
+            _CIR_2022,
+            "2a86beb48e5c87d7255261d7bc61e8b0da993cdce299301f681a73a60e1ee6a8",
+        ),
+        funcoes_esperadas=("CachedIntrospectionResults", "introspectInterfaces"),
     ),
 }
 
@@ -120,22 +153,28 @@ def avaliar_caso(
         _funcao(funcoes["vulneravel"], caso.funcao_da_semente, "o arquivo vulnerável").codigo,
         _funcao(funcoes["corrigido"], caso.funcao_da_semente, "o arquivo corrigido").codigo,
     )
-    _funcao(funcoes["alvo"], caso.funcao_esperada, "o alvo")
+    for esperada in caso.funcoes_esperadas:
+        _funcao(funcoes["alvo"], esperada, "o alvo")
     analisada = analisar_semente(semente, analisador)
     candidatos = [analisar_candidato(f, analisador) for f in funcoes["alvo"]]
-    esperada = next(i for i, c in enumerate(candidatos) if c.funcao.nome == caso.funcao_esperada)
-    posicoes = {}
+    indices = {
+        esperada: next(i for i, c in enumerate(candidatos) if c.funcao.nome == esperada)
+        for esperada in caso.funcoes_esperadas
+    }
+    posicoes: dict[str, dict[str, int]] = {}
     for pontuador in pontuadores:
         notas = pontuador.pontuar(analisada, candidatos)
         # Empate conta contra: a função esperada fica depois de todas com a mesma nota.
-        posicoes[pontuador.nome] = sum(1 for n in notas if n >= notas[esperada])
+        posicoes[pontuador.nome] = {
+            esperada: sum(1 for n in notas if n >= notas[i]) for esperada, i in indices.items()
+        }
     contornos = [c.candidato.funcao.nome for c in candidatos_a_contorno(analisada, candidatos)]
     return {
         "caso": caso.identificador,
         "descricao": caso.descricao,
         "funcoes_no_alvo": len(candidatos),
-        "funcao_esperada": caso.funcao_esperada,
+        "funcoes_esperadas": list(caso.funcoes_esperadas),
         "posicao": posicoes,
-        "na_lista_de_contornos": caso.funcao_esperada in contornos,
+        "na_lista_de_contornos": {e: e in contornos for e in caso.funcoes_esperadas},
         "contornos": contornos,
     }
