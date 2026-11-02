@@ -213,10 +213,11 @@ def comando_caso(argumentos: argparse.Namespace) -> int:
         return 0
     print(f"{resultado['caso']}: {resultado['descricao']}")
     total = resultado["funcoes_no_alvo"]
-    for nome, posicao in resultado["posicao"].items():
-        print(f"  {nome:<24} {resultado['funcao_esperada']} na posição {posicao} de {total}")
-    marca = "sim" if resultado["na_lista_de_contornos"] else "não"
-    print(f"  na lista de onde procurar contorno: {marca}")
+    for nome, posicoes in resultado["posicao"].items():
+        for funcao, posicao in posicoes.items():
+            print(f"  {nome:<24} {funcao} na posição {posicao} de {total}")
+    for funcao, esta in resultado["na_lista_de_contornos"].items():
+        print(f"  {funcao} na lista de onde procurar contorno: {'sim' if esta else 'não'}")
     return 0
 
 
