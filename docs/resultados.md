@@ -39,6 +39,13 @@ de código já corrigido no top 10; com elas, 2,6%. A heurística sem aprendizad
 (`jaccard_menos_correcao`) já tira a maior parte (9,0%), então a ideia explica a maior parte do
 ganho e o modelo acrescenta sobre ela.
 
+![Precisão média por método, escopo cwe](figuras/fig1-ap-escopo-cwe.png)
+
+![Código já corrigido no top 10](figuras/fig2-corrigidos-no-topo.png)
+
+As figuras saem de `python -m rastro.avaliacao.figuras`, com o CSV dos valores ao lado de cada
+uma em [`figuras/`](figuras/).
+
 ### Por CWE
 
 O modelo perde do Jaccard em 13 das 61 CWEs. Doze delas têm duas ou três sementes, o que dá pouca
@@ -69,6 +76,8 @@ A conclusão não muda com o n: o modelo fica entre 0,748 e 0,775, bem acima do 
 o código corrigido no topo fica abaixo de 5%. O n = 3 não é o melhor dos três, o que é coerente
 com ele não ter sido ajustado olhando o resultado.
 
+![Sensibilidade ao n-grama](figuras/fig3-sensibilidade-ngrama.png)
+
 ### Importância das características
 
 Queda da precisão média quando cada característica é embaralhada, nos pares de teste de cada
@@ -91,6 +100,8 @@ independente da ablação. As duas características de chamada que a correção 
 não contribuem: quase toda a informação delas já está nos n-gramas, que incluem o nome da chamada.
 Com n = 2 e n = 4 a ordem das duas primeiras é a mesma.
 
+![Importância das características](figuras/fig4-importancia.png)
+
 ## Escopo `familia`
 
 831 sementes em 83 CWEs. Os parentes são as variantes de fluxo da mesma família.
@@ -102,6 +113,8 @@ Com n = 2 e n = 4 a ordem das duas primeiras é a mesma.
 | Jaccard menos a correção | 0,830 [0,815; 0,845] | 0,980 | 2,1% |
 | Modelo sem a correção | 0,935 [0,925; 0,946] | 0,978 | 5,7% |
 | Modelo completo | 0,997 [0,995; 0,998] | 0,999 | 0,1% |
+
+![Os dois escopos](figuras/fig5-escopos.png)
 
 Aqui tudo satura: as variantes de fluxo da Juliet são o mesmo código com outra estrutura de
 controle em volta, e o Jaccard já acerta. A diferença de MRR entre o modelo e o Jaccard não é
