@@ -138,3 +138,34 @@ rastro variantes --id BRECHA-001 --vulneravel v1/ApiVulneravel.java \
 Na `/v1`, três métodos buscam conta pelo id sem conferir o dono: `conta` (linha 72), `extrato`
 (101) e `transferir` (127). O rastro pôs os três nas três primeiras posições, com a heurística. As
 versões corrigidas de `conta` e `extrato` na `/v2` foram para a lista de contornos.
+
+## RQ4, custo
+
+Workflow [Custo em repositório real](../.github/workflows/custo.yml), executor `ubuntu-latest` do
+GitHub Actions, `rastro variantes` com a semente de cada caso real sobre o repositório
+inteiro no commit do caso. Tempo e memória medidos com `/usr/bin/time -v`; o repositório vem por
+`git fetch` do commit exato.
+
+| Alvo | Linguagem | Funções | Tempo | Memória máxima |
+|---|---|---|---|---|
+| php-src (`4b15f5d4`) | C | 16.845 | 24,0 s | 381 MB |
+| spring-framework (`1627f57f`) | Java | 75.712 | 21,8 s | 670 MB |
+
+Os números são da execução de 02/11/2026; numa execução anterior, os mesmos alvos levaram 28,5 s e
+35,2 s. O tempo varia com a máquina que o GitHub entrega, mas fica na faixa de meio minuto por
+repositório, o que cabe num job de CI.
+
+O mesmo workflow é um teste de regressão em código real. Ele reprova se o lugar do contorno sair
+da lista de contornos, e mede, sem reprovar, a posição da variante:
+
+| Repositório inteiro | Itens na lista de contornos | Contorno na lista | Posição da variante |
+|---|---|---|---|
+| php-src | 2 | `main` sim | (não há variante sem correção neste caso) |
+| spring-framework | 1 | construtor `CachedIntrospectionResults` sim | `introspectInterfaces` acima de 1.000, de 75.712 |
+
+No repositório inteiro do Spring, a lista de contornos aponta um item só, e é o lugar exato do
+Spring4Shell. Já o ranqueamento se dilui: com o arquivo sozinho, `introspectInterfaces` ficava em
+3º de 17; entre 75.712 funções, o topo é ocupado por outras funções que tratam
+`PropertyDescriptor` (`BeanWrapperImpl`, `ExtendedBeanInfo`), do mesmo assunto. Para uma semente
+grande e genérica como esse construtor, o ranqueamento serve para escolher por onde começar dentro
+de um módulo, e não para apontar a linha certa num repositório de 75 mil funções.
