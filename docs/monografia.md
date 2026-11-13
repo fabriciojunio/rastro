@@ -2,7 +2,7 @@
 
 Fabrício Júnio
 
-Texto da monografia em Markdown, para depois ir para o modelo da instituição. Números e tabelas
+Relatório da pesquisa em Markdown. Números e tabelas
 vêm de [resultados.md](resultados.md); o método detalhado está em [metodologia.md](metodologia.md).
 
 ## Resumo

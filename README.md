@@ -12,7 +12,7 @@ O rastro faz essa busca. Recebe a semente (a função vulnerável e a mesma fun�
 base de código, e devolve duas listas: as funções mais parecidas com a falha e **menos parecidas
 com a correção**, e as que receberam a correção, onde se procura contorno.
 
-Trabalho de conclusão de curso de Fabrício Júnio.
+Pesquisa em Product Security de Fabrício Júnio.
 
 ## Resultado
 

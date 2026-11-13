@@ -12,7 +12,7 @@ rastro does that search. Given a seed (the vulnerable function and the same func
 codebase, it returns two lists: the functions most similar to the flaw and **least similar to the
 fix**, and the ones that already received the fix, where a bypass may hide.
 
-Undergraduate thesis by Fabrício Júnio.
+Product Security research by Fabrício Júnio.
 
 ## Results
 
