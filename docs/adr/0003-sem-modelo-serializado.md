@@ -17,6 +17,6 @@ por SHA-256.
 
 ## Consequências
 
-- O treino leva alguns minutos a cada uso com modelo. Para o uso no TCC e na CI, é aceitável.
+- O treino leva alguns minutos a cada uso com modelo. Para o uso na pesquisa e na CI, é aceitável.
 - Se um dia o tempo pesar, a saída é exportar o modelo num formato que não executa código (por
   exemplo, os limiares das árvores em JSON) e conferir o hash do arquivo, e não voltar ao `pickle`.
