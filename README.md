@@ -122,11 +122,6 @@ As decisões estão em [docs/adr/](docs/adr/).
   contornos.
 - O ganho do modelo na Juliet não se transferiu de forma estável para os dois casos reais.
 
-## Uso de IA
-
-Este projeto foi estruturado com apoio de ferramentas de IA generativa. Modelagem, regras de
-negócio, revisão do código e conclusões foram revisadas e validadas por Fabrício Júnio.
-
 ## Autor
 
 Fabrício Júnio · [GitHub](https://github.com/fabriciojunio)

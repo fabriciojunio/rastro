@@ -106,11 +106,6 @@ and Semgrep, and the full experiment on pull requests to production.
 - Incomplete fixes: ranking demotes the bypass location, which only appears in the bypass list.
 - The model's gain on Juliet did not transfer reliably to the two real cases.
 
-## Use of AI
-
-This project was structured with the help of generative AI tools. Modelling, business rules, code
-review and conclusions were reviewed and validated by Fabrício Júnio.
-
 ## Author
 
 Fabrício Júnio · [GitHub](https://github.com/fabriciojunio)
