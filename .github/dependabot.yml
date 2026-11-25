@@ -16,6 +16,10 @@ updates:
       prefix: "build(deps)"
     # A 0.26 derruba o processo em análises seguidas (docs/adr/0004-tree-sitter-0-25.md).
     ignore:
+      # Versão principal muda API e entra como migração planejada e testada. Correção de
+      # segurança não passa por aqui e continua vindo.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "tree-sitter"
         versions: [">=0.26"]
   - package-ecosystem: "github-actions"
